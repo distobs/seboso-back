@@ -1,0 +1,22 @@
+# Usa a imagem oficial do PostgreSQL
+FROM postgres:16
+
+# Define variáveis de ambiente padrão
+ENV POSTGRES_DB=meubanco
+ENV POSTGRES_USER=usuario
+ENV POSTGRES_PASSWORD=senha
+
+# (Opcional) Copia scripts SQL para inicialização automática
+# Qualquer arquivo em /docker-entrypoint-initdb.d será executado na primeira inicialização
+COPY sebo_project.sql /docker-entrypoint-initdb.d/
+
+# Expõe a porta padrão do PostgreSQL
+EXPOSE 5432
+
+#  docker run -d \
+#  --name postgres-container \
+#  -e POSTGRES_USER=usuario \
+#  -e POSTGRES_PASSWORD=senha \
+#  -e POSTGRES_DB=meubanco \
+#  -p 5432:5432 \
+#  postgres:16
