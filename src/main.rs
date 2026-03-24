@@ -4,16 +4,25 @@ use tokio_postgres::{Error, NoTls};
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     // Setup environment variables
-    dotenv().ok();
-    /*
+    match dotenv() {
+        Ok(_) => (),
+        Err(e) => panic!("Erro dotenv: {e:?}")
+    };
+
     let postgres_db: String = match var("POSTGRES_DB") {
         Ok(v) => v,
-        Err(e) => panic!("Erro {e:?}")
+        Err(e) => panic!("Erro POSTGRES_DB: {e:?}")
     };
-    */
-    let postgres_db: String = var("POSTGRES_DB").ok().unwrap();
-    let postgres_user: String = var("POSTGRES_USER").ok().unwrap();
-    let postgres_password: String = var("POSTGRES_PASSWORD").ok().unwrap();
+
+    let postgres_user: String = match var("POSTGRES_USER") {
+        Ok(v) => v,
+        Err(e) => panic!("Erro POSTGRES_USER: {e:?}")
+    };
+
+    let postgres_password: String = match var("POSTGRES_PASSWORD") {
+        Ok(v) => v,
+        Err(e) => panic!("Erro POSTGRES_PASSWORD: {e:?}")
+    };
 
     // Connection string format: host=localhost user=username password=password dbname=database
     let (client, connection) = tokio_postgres::connect(
