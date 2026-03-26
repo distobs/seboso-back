@@ -20,4 +20,5 @@ services:
     ports:
       - 5432:5432
 
+# docker compose up --build
 
