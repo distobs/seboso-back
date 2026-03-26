@@ -8,7 +8,7 @@ ENV POSTGRES_PASSWORD=senha
 
 # (Opcional) Copia scripts SQL para inicialização automática
 # Qualquer arquivo em /docker-entrypoint-initdb.d será executado na primeira inicialização
-COPY sebo_project.sql /docker-entrypoint-initdb.d/
+COPY sebosodb.sql /docker-entrypoint-initdb.d/
 
 # Expõe a porta padrão do PostgreSQL
 EXPOSE 5432
