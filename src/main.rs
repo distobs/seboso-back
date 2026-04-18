@@ -1,41 +1,37 @@
 use dotenv::{dotenv, var};
-use tokio_postgres::{Error, NoTls};
+use tokio_postgres::{NoTls};
 use axum::{
-    Router,
+    Router
 };
 
 mod routes;
 
+struct Config {
+    dbuser: String,
+    dbname: String,
+    dbpwd: String,
+}
+
+fn load_env_vars(
+) -> Result<Config, Box<dyn std::error::Error>> {
+    dotenv()?;
+
+    Ok(Config{
+        dbname: var("POSTGRES_DB")?,
+        dbuser: var("POSTGRES_USER")?,
+        dbpwd: var("POSTGRES_PASSWORD")?,
+    })
+}
+
 #[tokio::main]
-async fn main() -> Result<(), Error> {
-    // Setup environment variables
-    match dotenv() {
-        Ok(_) => (),
-        Err(e) => panic!("Erro dotenv: {e:?}")
-    };
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = load_env_vars()?;
 
-    let postgres_db: String = match var("POSTGRES_DB") {
-        Ok(v) => v,
-        Err(e) => panic!("Erro POSTGRES_DB: {e:?}")
-    };
-
-    let postgres_user: String = match var("POSTGRES_USER") {
-        Ok(v) => v,
-        Err(e) => panic!("Erro POSTGRES_USER: {e:?}")
-    };
-
-    let postgres_password: String = match var("POSTGRES_PASSWORD") {
-        Ok(v) => v,
-        Err(e) => panic!("Erro POSTGRES_PASSWORD: {e:?}")
-    };
-
-    // Connection string format: host=localhost user=username password=password dbname=database
     let (client, connection) = tokio_postgres::connect(
-        format!(
+        &format!(
             "host=localhost user={} dbname={} password={}",
-            postgres_user, postgres_db, postgres_password
-        )
-        .as_str(),
+            config.dbuser, config.dbname, config.dbpwd
+        ),
         NoTls,
     )
     .await?;
@@ -60,24 +56,12 @@ async fn main() -> Result<(), Error> {
         )
         .await?;
 
-    let rows = client.query("SELECT * FROM users;", &[]).await?;
-
-    // Iterate over results
-    for row in rows {
-        let id: i32 = row.get("id");
-        let name: String = row.get("name");
-        let email: String = row.get("email");
-
-        println!("{} | {} | {}", id, name, email);
-    }
-
     let app = Router::new()
         .merge(routes::make_routes());
 
-    // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
-
+    
     println!("Listening on http://localhost:3000");
 
     Ok(())

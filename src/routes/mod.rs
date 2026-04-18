@@ -1,6 +1,5 @@
 use axum::{Router, routing::get};
-
-mod user_routes;
+pub mod user_routes;
 
 pub fn make_routes() -> Router {
         Router::new()
