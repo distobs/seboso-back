@@ -5,6 +5,8 @@ use axum::{Router,
 };
 use crate::types::{DbPool, User};
 
+// TODO: implement a route to get all users that works efficiently
+//       (that is, a route that doesn't fill our memory with users)
 async fn get_user_id(
         Path(user_id): Path<usize>,
         State(pool): State<DbPool>
