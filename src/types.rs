@@ -3,7 +3,13 @@ use bb8_postgres::PostgresConnectionManager;
 use chrono::{DateTime, Utc};
 use tokio_postgres::NoTls;
 use tokio_postgres::{Row};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize)]
+pub struct Pagination {
+    pub page: Option<u32>,
+    pub per_page: Option<u32>,
+}
 
 // Entity models
 #[derive(Serialize)]
