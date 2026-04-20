@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"password" varchar(255) NOT NULL,
 	"cell_number" varchar(255) NOT NULL,
 	"role" bigint NOT NULL,
-	"created_at" timestamp with time zone NOT NULL,
-	"updated_at" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone NOT NULL DEFAULT NOW(),
+	"updated_at" timestamp with time zone NOT NULL DEFAULT NOW(),
 	PRIMARY KEY ("id")
 );
 
@@ -61,6 +61,31 @@ CREATE TABLE IF NOT EXISTS "catalog" (
 	"description" bigint NOT NULL,
 	PRIMARY KEY ("id_store", "id_book")
 );
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.updated_at = NOW();
+   RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+DO $$
+DECLARE
+    t text;
+BEGIN
+    FOR t IN SELECT unnest(ARRAY['users', 'books', 'store'])
+    LOOP
+        EXECUTE format(
+            'CREATE TRIGGER update_%I_updated_at
+             BEFORE UPDATE ON %I
+             FOR EACH ROW
+             EXECUTE FUNCTION update_updated_at_column();',
+            t, t
+        );
+    END LOOP;
+END;
+$$;
 
 
 ALTER TABLE "user_store" ADD CONSTRAINT "users_fk0" FOREIGN KEY ("id_user") REFERENCES "users"("id");

@@ -1,8 +1,10 @@
-use crate::types::{DbPool, Pagination, User};
+use crate::types::{ApiResponse, CreateUser, DbPool, Pagination, User};
 use axum::{
     Json, Router,
-    extract::{Path, Query, State},
-    routing::get,
+    extract::{self, Path, Query, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
 };
 
 // TODO: implement a route to get all users that works efficiently
@@ -44,8 +46,35 @@ async fn list_users(
     Json(users)
 }
 
+async fn create_user(
+    State(pool): State<DbPool>,
+    extract::Json(payload): extract::Json<CreateUser>,
+) -> impl IntoResponse {
+    let conn = pool.get().await.unwrap();
+
+    conn.execute(
+        "INSERT INTO users (name, email, login, password, cell_number, role)
+         VALUES ($1, $2, $3, $4, $5, $6)",
+        &[
+            &payload.name,
+            &payload.email,
+            &payload.login,
+            &payload.pw_hash,
+            &payload.cell_number,
+            &payload.role,
+        ],
+    )
+    .await
+    .unwrap();
+
+    Json(ApiResponse {
+        success: true,
+        message: "Usuário criado.".to_string(),
+    })
+}
+
 pub fn make_user_routes() -> Router<DbPool> {
     Router::new()
-        .route("/users", get(list_users))
-        .route("/user/{user_id}", get(get_user_id))
+        .route("/users", get(list_users).post(create_user))
+        .route("/users/{user_id}", get(get_user_id))
 }

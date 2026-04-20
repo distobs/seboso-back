@@ -11,6 +11,12 @@ pub struct Pagination {
     pub per_page: Option<u32>,
 }
 
+#[derive(Serialize)]
+pub struct ApiResponse {
+    pub success: bool,
+    pub message: String,
+}
+
 // Entity models
 #[derive(Serialize)]
 pub struct User {
@@ -23,6 +29,16 @@ pub struct User {
     pub role: i64,
     pub created_at: String,
     pub updated_at: String,
+}
+
+#[derive(Deserialize)]
+pub struct CreateUser {
+    pub name: String,
+    pub email: String,
+    pub login: String,
+    pub pw_hash: String,
+    pub cell_number: String,
+    pub role: i64,
 }
 
 impl From<&Row> for User {
