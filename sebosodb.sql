@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"password" varchar(255) NOT NULL,
 	"cell_number" varchar(255) NOT NULL,
 	"role" bigint NOT NULL,
+	"is_activated" bigint NOT NULL,
 	"created_at" timestamp with time zone NOT NULL DEFAULT NOW(),
 	"updated_at" timestamp with time zone NOT NULL DEFAULT NOW(),
 	PRIMARY KEY ("id")

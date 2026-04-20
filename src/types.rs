@@ -27,6 +27,7 @@ pub struct User {
     pub pw_hash: String,
     pub cell_number: String,
     pub role: i64,
+    pub is_activated: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -39,6 +40,7 @@ pub struct CreateUser {
     pub pw_hash: String,
     pub cell_number: String,
     pub role: i64,
+    pub is_activated: i64
 }
 
 impl From<&Row> for User {
@@ -51,6 +53,7 @@ impl From<&Row> for User {
             pw_hash: row.get("password"),
             cell_number: row.get("cell_number"),
             role: row.get("role"),
+            is_activated: row.get("is_activated"),
             created_at: row.get::<&str, DateTime<Utc>>("created_at")
                 .to_string(),
             updated_at: row.get::<&str, DateTime<Utc>>("updated_at")

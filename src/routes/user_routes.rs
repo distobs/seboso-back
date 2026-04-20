@@ -2,9 +2,8 @@ use crate::types::{ApiResponse, CreateUser, DbPool, Pagination, User};
 use axum::{
     Json, Router,
     extract::{self, Path, Query, State},
-    http::StatusCode,
     response::IntoResponse,
-    routing::{get, post},
+    routing::get,
 };
 
 // TODO: implement a route to get all users that works efficiently
@@ -53,8 +52,8 @@ async fn create_user(
     let conn = pool.get().await.unwrap();
 
     conn.execute(
-        "INSERT INTO users (name, email, login, password, cell_number, role)
-         VALUES ($1, $2, $3, $4, $5, $6)",
+        "INSERT INTO users (name, email, login, password, cell_number, role, is_activated)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
         &[
             &payload.name,
             &payload.email,
@@ -62,6 +61,7 @@ async fn create_user(
             &payload.pw_hash,
             &payload.cell_number,
             &payload.role,
+            &payload.is_activated
         ],
     )
     .await
@@ -73,8 +73,61 @@ async fn create_user(
     })
 }
 
+async fn update_user(
+    Path(user_id): Path<i32>,
+    State(pool): State<DbPool>,
+    Json(payload): Json<CreateUser>,
+) -> impl IntoResponse {
+    let conn = pool.get().await.unwrap();
+
+    conn.execute(
+        "UPDATE users
+         SET name = $1,
+             email = $2,
+             login = $3,
+             password = $4,
+             cell_number = $5,
+             role = $6,
+             is_activated = $7
+         WHERE id = $8",
+        &[
+            &payload.name,
+            &payload.email,
+            &payload.login,
+            &payload.pw_hash,
+            &payload.cell_number,
+            &payload.role,
+            &payload.is_activated,
+            &user_id
+        ],
+    )
+    .await
+    .unwrap();
+
+    Json(ApiResponse {
+        success: true,
+        message: format!("Usuário {} modificado.", &payload.name).to_string(),
+    })
+}
+
+async fn delete_user(Path(user_id): Path<i32>, State(pool): State<DbPool>) -> impl IntoResponse {
+    let conn = pool.get().await.unwrap();
+
+    conn.execute("DELETE FROM users WHERE id = $1", &[&user_id])
+        .await
+        .unwrap();
+
+    Json(ApiResponse {
+        success: true,
+        message: format!("Usuário {} deletado.", &user_id).to_string(),
+    })
+}
+
 pub fn make_user_routes() -> Router<DbPool> {
     Router::new()
         .route("/users", get(list_users).post(create_user))
-        .route("/users/{user_id}", get(get_user_id))
+        .route(
+            "/users/{user_id}",
+            get(get_user_id).put(update_user).delete(delete_user),
+        )
 }
