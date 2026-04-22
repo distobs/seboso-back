@@ -37,10 +37,16 @@ pub struct CreateUser {
     pub name: String,
     pub email: String,
     pub login: String,
-    pub pw_hash: String,
+    pub password: String,
     pub cell_number: String,
     pub role: i64,
     pub is_activated: i64
+}
+
+#[derive(Deserialize)]
+pub struct LoginUser {
+    pub login: String,
+    pub password: String,
 }
 
 impl From<&Row> for User {

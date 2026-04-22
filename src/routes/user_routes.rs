@@ -1,10 +1,11 @@
-use crate::types::{ApiResponse, CreateUser, DbPool, Pagination, User};
+use crate::types::{ApiResponse, CreateUser, DbPool, LoginUser, Pagination, User};
 use axum::{
     Json, Router,
     extract::{self, Path, Query, State},
     response::IntoResponse,
-    routing::get,
+    routing::{get, post},
 };
+use bcrypt::{DEFAULT_COST, hash, verify};
 
 // TODO: implement a route to get all users that works efficiently
 //       (that is, a route that doesn't fill our memory with users)
@@ -51,6 +52,12 @@ async fn create_user(
 ) -> impl IntoResponse {
     let conn = pool.get().await.unwrap();
 
+    let password = payload.password;
+
+    // Gera o hash da senha
+    let hashed_password = hash(password, DEFAULT_COST).unwrap();
+    // DEFAULT_COST geralmente = 12 (bom equilíbrio segurança/performance)
+
     conn.execute(
         "INSERT INTO users (name, email, login, password, cell_number, role, is_activated)
          VALUES ($1, $2, $3, $4, $5, $6, $7)",
@@ -58,10 +65,10 @@ async fn create_user(
             &payload.name,
             &payload.email,
             &payload.login,
-            &payload.pw_hash,
+            &hashed_password,
             &payload.cell_number,
             &payload.role,
-            &payload.is_activated
+            &payload.is_activated,
         ],
     )
     .await
@@ -71,6 +78,34 @@ async fn create_user(
         success: true,
         message: "Usuário criado.".to_string(),
     })
+}
+
+async fn login_user(
+    State(pool): State<DbPool>,
+    Json(payload): Json<LoginUser>,
+) -> Json<ApiResponse> {
+    let conn = pool.get().await.unwrap();
+
+    let row = conn
+        .query_one("SELECT * FROM users WHERE login = $1", &[&payload.login])
+        .await
+        .unwrap();
+
+    let user = User::from(&row);
+
+    let is_valid = verify(&payload.password, &user.pw_hash).unwrap();
+
+    if is_valid {
+        return Json(ApiResponse {
+            success: true,
+            message: "Usuário autenticado.".to_string(),
+        });
+    } else {
+        return Json(ApiResponse {
+            success: false,
+            message: "Login ou Senha incorretos.".to_string(),
+        });
+    }
 }
 
 async fn update_user(
@@ -94,11 +129,11 @@ async fn update_user(
             &payload.name,
             &payload.email,
             &payload.login,
-            &payload.pw_hash,
+            &payload.password,
             &payload.cell_number,
             &payload.role,
             &payload.is_activated,
-            &user_id
+            &user_id,
         ],
     )
     .await
@@ -130,4 +165,5 @@ pub fn make_user_routes() -> Router<DbPool> {
             "/users/{user_id}",
             get(get_user_id).put(update_user).delete(delete_user),
         )
+        .route("/users/login", post(login_user))
 }
