@@ -123,7 +123,7 @@ async fn login_user(
     let is_valid = verify(&payload.password, &user.pw_hash).unwrap();
 
     if is_valid {
-        let token = generate_jwt(user.id);
+        let token = generate_jwt(user.id.try_into().unwrap());
 
         return Json(ApiResponse {
             success: true,
