@@ -1,7 +1,11 @@
-# Running with Docker:
+# Back-end do Seboso
+
+## Rodando o BD com Docker
 
 - docker build --tag 'postgres-seboso-img' .
-
 - docker compose up --build
 
-- running just DB.
+## Outros
+
+- populate_db.sh: arquivo para testes.
+- rotas.md, entidades.md: arquivos para referência dos desenvolvedores.
