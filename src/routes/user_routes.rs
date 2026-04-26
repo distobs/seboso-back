@@ -1,12 +1,44 @@
-use crate::types::{ApiResponse, CreateUser, DbPool, LoginUser, Pagination, User};
+use crate::{
+    types::{ApiResponse, CreateUser, DbPool, LoginUser, Pagination, User},
+    utils::{Claims, jwt_middleware, load_env_vars},
+};
 use axum::{
     Json, Router,
     extract::{self, Path, Query, State},
+    middleware,
     response::IntoResponse,
     routing::{get, post},
 };
 use bcrypt::{DEFAULT_COST, hash, verify};
 
+use chrono::{Utc, Duration};
+use jsonwebtoken::{EncodingKey, Header, encode};
+
+fn generate_jwt(user_id: i32) -> String {
+    let config = load_env_vars().unwrap();
+
+    let expiration = Utc::now()
+        .checked_add_signed(Duration::hours(24))
+        .unwrap()
+        .timestamp() as usize;
+
+    let claims = Claims {
+        sub: user_id,
+        exp: expiration,
+    };
+
+    let secret = config.secret_key; // coloque em env depois!
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_ref()),
+    )
+    .unwrap()
+}
+
+// TODO: implement a route to get all users that works efficiently
+//       (that is, a route that doesn't fill our memory with users)
 async fn get_user_id(Path(user_id): Path<usize>, State(pool): State<DbPool>) -> Json<User> {
     let conn = pool.get().await.unwrap();
     let row = conn
@@ -91,9 +123,11 @@ async fn login_user(
     let is_valid = verify(&payload.password, &user.pw_hash).unwrap();
 
     if is_valid {
+        let token = generate_jwt(user.id);
+
         return Json(ApiResponse {
             success: true,
-            message: "Usuário autenticado.".to_string(),
+            message: token,
         });
     } else {
         return Json(ApiResponse {
@@ -153,10 +187,20 @@ async fn delete_user(Path(user_id): Path<i32>, State(pool): State<DbPool>) -> im
 
 pub fn make_user_routes() -> Router<DbPool> {
     Router::new()
-        .route("/users", get(list_users).post(create_user))
+        .route(
+            "/users",
+            get(list_users)
+                .layer(middleware::from_fn(jwt_middleware))
+                .post(create_user),
+        )
         .route(
             "/users/{user_id}",
-            get(get_user_id).put(update_user).delete(delete_user),
+            get(get_user_id)
+                .layer(middleware::from_fn(jwt_middleware))
+                .put(update_user)
+                .layer(middleware::from_fn(jwt_middleware))
+                .delete(delete_user)
+                .layer(middleware::from_fn(jwt_middleware)),
         )
         .route("/users/login", post(login_user))
 }
