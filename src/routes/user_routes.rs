@@ -7,8 +7,6 @@ use axum::{
 };
 use bcrypt::{DEFAULT_COST, hash, verify};
 
-// TODO: implement a route to get all users that works efficiently
-//       (that is, a route that doesn't fill our memory with users)
 async fn get_user_id(Path(user_id): Path<usize>, State(pool): State<DbPool>) -> Json<User> {
     let conn = pool.get().await.unwrap();
     let row = conn
@@ -21,7 +19,7 @@ async fn get_user_id(Path(user_id): Path<usize>, State(pool): State<DbPool>) -> 
     Json(user)
 }
 
-/// users?page=1&per_page=10
+// users?page=1&per_page=10
 async fn list_users(
     Query(pagination): Query<Pagination>,
     State(pool): State<DbPool>,
@@ -42,7 +40,7 @@ async fn list_users(
         .unwrap();
 
     let users: Vec<User> = rows.iter().map(User::from).collect();
-
+    
     Json(users)
 }
 
@@ -54,20 +52,17 @@ async fn create_user(
 
     let password = payload.password;
 
-    // Gera o hash da senha
     let hashed_password = hash(password, DEFAULT_COST).unwrap();
-    // DEFAULT_COST geralmente = 12 (bom equilíbrio segurança/performance)
 
     conn.execute(
-        "INSERT INTO users (name, email, login, password, cell_number, role, is_activated)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO users (name, email, login, password, cell_number,is_activated)
+         VALUES ($1, $2, $3, $4, $5, $6)",
         &[
             &payload.name,
             &payload.email,
             &payload.login,
             &hashed_password,
             &payload.cell_number,
-            &payload.role,
             &payload.is_activated,
         ],
     )
@@ -122,8 +117,7 @@ async fn update_user(
              login = $3,
              password = $4,
              cell_number = $5,
-             role = $6,
-             is_activated = $7
+             is_activated = $6
          WHERE id = $8",
         &[
             &payload.name,
@@ -131,7 +125,6 @@ async fn update_user(
             &payload.login,
             &payload.password,
             &payload.cell_number,
-            &payload.role,
             &payload.is_activated,
             &user_id,
         ],
