@@ -37,12 +37,10 @@ fn generate_jwt(user_id: i32) -> String {
     .unwrap()
 }
 
-// TODO: implement a route to get all users that works efficiently
-//       (that is, a route that doesn't fill our memory with users)
 async fn get_user_id(Path(user_id): Path<usize>, State(pool): State<DbPool>) -> Json<User> {
     let conn = pool.get().await.unwrap();
     let row = conn
-        .query_one("SELECT * FROM users WHERE id = $1", &[&(user_id as i32)])
+        .query_one("SELECT * FROM users WHERE id = $1", &[&(user_id as i64)])
         .await
         .unwrap();
 
