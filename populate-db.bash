@@ -1,4 +1,4 @@
-#!/bin/basdh
+#!/bin/bash
 
 # Feito por IA
 
