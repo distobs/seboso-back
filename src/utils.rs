@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub: i32, // Subject (e.g., user ID)
+    pub sub: i64, // Subject (e.g., user ID)
     pub exp: usize,  // Expiration time
 }
 
@@ -31,6 +31,7 @@ pub fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error
     let config = load_env_vars().unwrap();
 
     let validation = Validation::new(jsonwebtoken::Algorithm::HS256);
+
     decode::<Claims>(token, &DecodingKey::from_secret(config.secret_key.as_bytes()), &validation)
         .map(|data| data.claims)
 }
@@ -51,7 +52,6 @@ pub async fn jwt_middleware(
 
     let claims = validate_token(token).map_err(|_| StatusCode::UNAUTHORIZED)?;
 
-    // Store claims in request extensions for handlers to access
     request.extensions_mut().insert(claims);
     Ok(next.run(request).await)
 }

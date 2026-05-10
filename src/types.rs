@@ -108,14 +108,6 @@ impl From<&Row> for User {
     }
 }
 
-/** USER_STORE **/
-#[derive(Deserialize)]
-pub struct UserStore {    
-    pub store_id: i64,
-    pub user_id: i64,
-    pub role: String,
-}
-
 /** STORE **/
 #[derive(Serialize)]
 pub struct Store {
@@ -142,8 +134,7 @@ pub struct CreateStore {
     pub state: String,
     pub city_block: String,
     pub cep: String,
-    pub owners: Vec<i64>,
-    pub workers: Vec<i64>,
+    pub workers: Vec<CreateUserStore>,
 }
 
 impl From<&Row> for Store {
@@ -163,6 +154,82 @@ impl From<&Row> for Store {
             updated_at: row.get::<&str, DateTime<Utc>>("updated_at")
                 .to_string(),
         }
+    }
+}
+
+/** USER_STORE **/
+#[derive(Deserialize)]
+pub struct UserStore {    
+    pub store_id: i64,
+    pub user_id: i64,
+    pub role: String,
+}
+
+#[derive(Deserialize)]
+pub struct CreateUserStore {    
+    pub user_id: i64,
+    pub role: String,
+}
+
+impl From<&Row> for UserStore {
+    fn from(row: &Row) -> Self {
+        Self {
+            store_id: row.get("store_id"),
+            user_id: row.get("user_id"),
+            role: row.get("role"),
+        }
+    }
+}
+
+impl UserStore {
+    pub async fn from_user_id(
+        pool: &DbPool,
+        user_id: i64,
+    ) -> Result<Vec<UserStore>, ApiError> {
+        let conn = pool.get().await.unwrap();
+
+        let rows = conn.query(
+            "SELECT * FROM user_store WHERE user_id = $1",
+            &[&user_id]
+        )
+        .await?;
+        
+        Ok(rows.iter().map(UserStore::from).collect())
+    }
+
+    pub async fn from_store_id(
+        pool: &DbPool,
+        store_id: i64,
+    ) -> Result<Vec<UserStore>, ApiError> {
+        let conn = pool.get().await.unwrap();
+
+        let rows = conn.query(
+            "SELECT * FROM user_store WHERE store_id = $1",
+            &[&store_id]
+        )
+        .await?;
+        
+        Ok(rows.iter().map(UserStore::from).collect())
+    }
+
+    pub async fn check_role_in_store(
+        user_id: i64, store_id: i64, roles: &[&str], pool: &DbPool
+    ) -> Result<bool, ApiError> {
+        let conn = pool.get().await.unwrap();
+
+        let row = conn.query_opt(
+            "
+                SELECT 1
+                FROM user_store
+                WHERE user_id = $1
+                AND store_id = $2
+                AND role = ANY($3)
+                LIMIT 1
+            ", &[&user_id, &store_id, &roles]
+        )
+        .await?;
+
+        Ok(row.is_some())
     }
 }
 

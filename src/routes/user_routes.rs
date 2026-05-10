@@ -3,18 +3,14 @@ use crate::{
     utils::{Claims, jwt_middleware, load_env_vars},
 };
 use axum::{
-    Json, Router,
-    extract::{self, Path, Query, State},
-    middleware,
-    response::IntoResponse,
-    routing::{get, post},
+    Json, Router, extract::{self, Extension, Path, Query, State}, http::StatusCode, middleware, response::IntoResponse, routing::{get, post, put}
 };
 use bcrypt::{DEFAULT_COST, hash, verify};
 
 use chrono::{Utc, Duration};
 use jsonwebtoken::{EncodingKey, Header, encode};
 
-fn generate_jwt(user_id: i32) -> String {
+fn generate_jwt(user_id: i64) -> String {
     let config = load_env_vars().unwrap();
 
     let expiration = Utc::now()
@@ -136,10 +132,17 @@ async fn login_user(
 }
 
 async fn update_user(
-    Path(user_id): Path<i32>,
+    Path(user_id): Path<i64>,
     State(pool): State<DbPool>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateUser>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, StatusCode> {
+
+    // safety check
+    if claims.sub != user_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     let conn = pool.get().await.unwrap();
 
     conn.execute(
@@ -150,7 +153,7 @@ async fn update_user(
              password = $4,
              cell_number = $5,
              is_activated = $6
-         WHERE id = $8",
+         WHERE id = $7",
         &[
             &payload.name,
             &payload.email,
@@ -163,24 +166,32 @@ async fn update_user(
     )
     .await
     .unwrap();
-
-    Json(ApiResponse {
+    
+    Ok(Json(ApiResponse {
         success: true,
         message: format!("Usuário {} modificado.", &payload.name).to_string(),
-    })
+    }))
 }
 
-async fn delete_user(Path(user_id): Path<i32>, State(pool): State<DbPool>) -> impl IntoResponse {
+async fn delete_user(
+    Path(user_id): Path<i64>,
+    State(pool): State<DbPool>,
+    Extension(claims): Extension<Claims>
+) -> Result<impl IntoResponse, StatusCode> {
+    if claims.sub != user_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     let conn = pool.get().await.unwrap();
 
     conn.execute("DELETE FROM users WHERE id = $1", &[&user_id])
         .await
         .unwrap();
 
-    Json(ApiResponse {
+    Ok(Json(ApiResponse {
         success: true,
         message: format!("Usuário {} deletado.", &user_id).to_string(),
-    })
+    }))
 }
 
 pub fn make_user_routes() -> Router<DbPool> {
@@ -188,15 +199,15 @@ pub fn make_user_routes() -> Router<DbPool> {
         .route(
             "/users",
             get(list_users)
-                .layer(middleware::from_fn(jwt_middleware))
-                .post(create_user),
+            .post(create_user)
         )
         .route(
             "/users/{user_id}",
             get(get_user_id)
-                .layer(middleware::from_fn(jwt_middleware))
-                .put(update_user)
-                .layer(middleware::from_fn(jwt_middleware))
+        )
+        .route(
+            "/users/{user_id}",
+                put(update_user)
                 .delete(delete_user)
                 .layer(middleware::from_fn(jwt_middleware)),
         )
