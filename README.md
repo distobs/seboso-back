@@ -1,5 +1,9 @@
 # Back-end do Seboso
 
+## Rodando o app
+
+- cargo run
+
 ## Rodando o BD com Docker
 
 - docker build --tag 'postgres-seboso-img' .
