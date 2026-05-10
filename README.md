@@ -3,7 +3,7 @@
 ## O que é?
 
 O Seboso quer fornecer uma interface prática para a descoberta e o gerenciamento
-de sebos, visando ampliar a cultura do sebo. Este é o back-end, o servidor do
+de sebos, visando ampliar a cultura do sebo. Este é o back-end - o servidor - do
 Seboso.
 
 ## Como rodar?
