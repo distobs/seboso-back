@@ -19,8 +19,8 @@ $ git clone https://github.com/distobs/seboso-back.git
 - Crie um .env:
 
 ```bash
-$ cp .env.example
-$ # abra o .env.example com seu editor favorito e preencha com os valores que quiser
+$ cp .env.example .env
+$ # abra o .env com seu editor favorito e preencha com os valores que quiser
 ```
 
 - Instale o Docker e verifique se o comando `docker compose version` funciona.
