@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let conn_manager = PostgresConnectionManager::new_from_stringlike(
         &format!(
-            "host=localhost user={} dbname={} password={}",
+            "host=db user={} dbname={} password={}",
             config.dbuser, config.dbname, config.dbpwd
         ),
         NoTls,

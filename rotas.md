@@ -72,9 +72,3 @@ PUT:
 DELETE:
 
 /books(id): deleta o livro
-
-
-
-
-
-
