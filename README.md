@@ -30,6 +30,7 @@ $ # abra o .env com seu editor favorito e preencha com os valores que quiser
 ```bash
 $ docker compose up --build # Para compilar e iniciar. d (de detach) para deixar em segundo plano.
 $ docker compose down -v # para parar o container
+$ # às vezes é necessário rodar como root. Se der erro, tente isso.
 ```
 
 No Windows: deve ser parecido, mas não tenho um Windows instalado pra testar.
