@@ -31,6 +31,7 @@ $ # abra o .env com seu editor favorito e preencha com os valores que quiser
 $ docker compose up --build # Para compilar e iniciar. d (de detach) para deixar em segundo plano.
 $ docker compose down -v # para parar o container
 $ # às vezes é necessário rodar como root. Se der erro, tente isso.
+$ # pode acontecer do volume bugar e permanecer dados passados, ocasionando em erro. Se isso acontecer, remova os volumes no docker antes de rodar.
 ```
 
 No Windows: deve ser parecido, mas não tenho um Windows instalado pra testar.
@@ -101,6 +102,7 @@ erros com nosso back-end.
       ]
     }
   },
+
   "/users": {
     "DELETE /users/{user_id}": {
       "Descrição": "Exclui usuário, necessita de token do dono da conta"
@@ -142,6 +144,62 @@ erros com nosso back-end.
         "password",
         "cell_number",
         "is_activated"
+      ]
+    }
+  },
+
+  "/books": {
+    "DELETE /books/{book_id}": {
+      "Descrição": "Exclui livro"
+    },
+
+    "GET /books/{isbn_10}": {
+      "Descrição": "Retorna informações de um livro com base no isbn_10 code"
+    },
+
+    "GET /books?page=<>&per_page=<>": {
+      "Descrição": "Lista livros, com paginação",
+      "Parâmetros (de URL)": {
+        "page": "Página",
+        "per_page": "Número de livros por página"
+      }
+    },
+
+    "POST /books/": {
+      "Descrição": "Cria livro",
+      "Parâmetros (JSON)": [
+        "title",
+        "description",
+        "launched_at",
+        "cover_type",
+        "author",
+        "edition",
+        "language",
+        "genre",
+        "isbn_10_code",
+        "isbn_13_code",
+        "publisher",
+        "pages",
+        "dimentions"
+      ]
+    },
+
+    "PUT /books/{book_id}": {
+      "Descrição": "Atualiza um livro",
+      "Parâmetros (JSON)": [
+        "title",
+        "description",
+        "launched_at",
+        "cover_type",
+        "author",
+        "edition",
+        "language",
+        "genre",
+        "isbn_10_code",
+        "isbn_13_code",
+        "publisher",
+        "pages",
+        "dimentions"
       ]
     }
   }

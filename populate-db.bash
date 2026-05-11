@@ -8,7 +8,7 @@ echo "Creating users..."
 
 for i in {1..10}
 do
-  curl -s -X POST "$API/users" \
+  curl -X POST "$API/users" \
     -H "Content-Type: application/json" \
     -d "{
       \"name\": \"User $i\",
@@ -25,7 +25,7 @@ done
 echo ""
 echo "Logging in as user1..."
 
-LOGIN_RESPONSE=$(curl -s -X POST "$API/users/login" \
+LOGIN_RESPONSE=$(curl -X POST "$API/users/login" \
   -H "Content-Type: application/json" \
   -d '{
     "login": "user1",
@@ -64,6 +64,33 @@ do
           \"role\": \"worker\"
         }
       ]
+    }"
+
+  echo ""
+done
+
+echo ""
+echo "Creating books..."
+
+for i in {1..5}
+do
+  curl -s -X POST "$API/books" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d "{
+      \"title\": \"Livro $i\",
+      \"description\": \"Descrição do livro $i\",
+      \"launched_at\": \"0$i/01/2024\",
+      \"cover_type\": \"Capa comum\",
+      \"author\": \"Autor $i\",
+      \"edition\": \"${i}ª edição\",
+      \"language\": \"Português\",
+      \"genre\": \"Ficção\",
+      \"isbn_10_code\": 123456789$i,
+      \"isbn_13_code\": \"978123456789$i\",
+      \"publisher\": \"Editora $i\",
+      \"pages\": $((100 + i * 10)),
+      \"dimentions\": \"23 x 16 x 2 cm\"
     }"
 
   echo ""
