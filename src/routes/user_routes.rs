@@ -3,11 +3,16 @@ use crate::{
     utils::{Claims, jwt_middleware, load_env_vars},
 };
 use axum::{
-    Json, Router, extract::{self, Extension, Path, Query, State}, http::StatusCode, middleware, response::IntoResponse, routing::{get, post, put}
+    Json, Router,
+    extract::{self, Extension, Path, Query, State},
+    http::StatusCode,
+    middleware,
+    response::IntoResponse,
+    routing::{get, post},
 };
 use bcrypt::{DEFAULT_COST, hash, verify};
 
-use chrono::{Utc, Duration};
+use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
 
 fn generate_jwt(user_id: i64) -> String {
@@ -66,7 +71,7 @@ async fn list_users(
         .unwrap();
 
     let users: Vec<User> = rows.iter().map(User::from).collect();
-    
+
     Json(users)
 }
 
@@ -137,7 +142,6 @@ async fn update_user(
     Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateUser>,
 ) -> Result<impl IntoResponse, StatusCode> {
-
     // safety check
     if claims.sub != user_id {
         return Err(StatusCode::FORBIDDEN);
@@ -166,7 +170,7 @@ async fn update_user(
     )
     .await
     .unwrap();
-    
+
     Ok(Json(ApiResponse {
         success: true,
         message: format!("Usuário {} modificado.", &payload.name).to_string(),
@@ -176,7 +180,7 @@ async fn update_user(
 async fn delete_user(
     Path(user_id): Path<i64>,
     State(pool): State<DbPool>,
-    Extension(claims): Extension<Claims>
+    Extension(claims): Extension<Claims>,
 ) -> Result<impl IntoResponse, StatusCode> {
     if claims.sub != user_id {
         return Err(StatusCode::FORBIDDEN);
@@ -195,21 +199,19 @@ async fn delete_user(
 }
 
 pub fn make_user_routes() -> Router<DbPool> {
-    Router::new()
-        .route(
-            "/users",
-            get(list_users)
-            .post(create_user)
-        )
+    let public_routes = Router::new()
+        .route("/users", post(create_user))
+        .route("/users/login", post(login_user));
+
+    let protected_routes = Router::new()
+        .route("/users", get(list_users))
         .route(
             "/users/{user_id}",
             get(get_user_id)
+                .put(update_user)
+                .delete(delete_user),
         )
-        .route(
-            "/users/{user_id}",
-                put(update_user)
-                .delete(delete_user)
-                .layer(middleware::from_fn(jwt_middleware)),
-        )
-        .route("/users/login", post(login_user))
+        .layer(middleware::from_fn(jwt_middleware));
+
+    public_routes.merge(protected_routes)
 }

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS "books" (
 	"id" bigserial NOT NULL UNIQUE,
 	"title" varchar(255) NOT NULL,
 	"description" varchar(255) NOT NULL,
-	"launched_at" timestamp with time zone NOT NULL,
+	"launched_at" varchar(255) NOT NULL,
 	"cover_type" varchar(255) NOT NULL,
 	"author" varchar(255) NOT NULL,
 	"edition" varchar(255) NOT NULL,
