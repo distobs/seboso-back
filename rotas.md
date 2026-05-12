@@ -34,6 +34,13 @@ DELETE:
 
 /store(id): Deleta um sebo
 
+# */userstore*
+
+GET:
+/userstore/user/id: retorna uma lista de objetos do tipo {lojaid, role}
+
+/userstore/store/id/ retorna uma lista de objetos do tipo {userid, role}, que indica os funcionarios do sebo com seus cargos
+
 # */catalogo*
 
 GET:
