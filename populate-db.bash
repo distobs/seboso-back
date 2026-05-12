@@ -97,4 +97,23 @@ do
 done
 
 echo ""
+echo "Creating books in catalog..."
+
+for i in {1..5}
+do
+  curl -s -X POST "$API/catalog" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d "{
+      \"id_store\": $i,
+      \"isbn_10_code_book\": 123456789$i,
+      \"price\": 1$i.00,
+      \"quantity\": 1$i,
+      \"description\": \"Teste teste teste.\"
+    }"
+
+  echo ""
+done
+
+echo ""
 echo "Done."

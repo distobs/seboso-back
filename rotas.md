@@ -40,11 +40,10 @@ GET:
 
 /catalog: todo o catálogo
 /catalog(id_store): catálogo de um sebo específico
-/catalog(dados de busca): todo o catálogo
 
 POST:
 
-/catalog(id_store)(dados): inserção do livro no catálogo da loja
+/catalog(dados): inserção do livro no catálogo da loja
 
 PUT:
 

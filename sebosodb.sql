@@ -55,43 +55,62 @@ CREATE TABLE IF NOT EXISTS "user_store" (
 
 CREATE TABLE IF NOT EXISTS "catalog" (
 	"id_store" bigint NOT NULL,
-	"id_book" bigint NOT NULL,
-	"price" bigint NOT NULL,
+	"isbn_10_code_book" bigint NOT NULL,
+	"price" real NOT NULL,
 	"quantity" bigint NOT NULL,
-	"description" bigint NOT NULL,
-	PRIMARY KEY ("id_store", "id_book")
+	"description" varchar(255) NOT NULL,
+	PRIMARY KEY ("id_store", "isbn_10_code_book")
 );
 
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-   NEW.updated_at = NOW();
-   RETURN NEW;
-END;
-$$ language 'plpgsql';
+CREATE
+OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $ $ BEGIN NEW.updated_at = NOW();
 
-DO $$
-DECLARE
-    t text;
-BEGIN
-    FOR t IN SELECT unnest(ARRAY['users', 'books', 'stores'])
-    LOOP
-        EXECUTE format(
-            'CREATE TRIGGER update_%I_updated_at
+RETURN NEW;
+
+END;
+
+$ $ language 'plpgsql';
+
+DO $ $ DECLARE t text;
+
+BEGIN FOR t IN
+SELECT
+	unnest(ARRAY ['users', 'books', 'stores']) LOOP EXECUTE format(
+		'CREATE TRIGGER update_%I_updated_at
              BEFORE UPDATE ON %I
              FOR EACH ROW
              EXECUTE FUNCTION update_updated_at_column();',
-            t, t
-        );
-    END LOOP;
+		t,
+		t
+	);
+
+END LOOP;
+
 END;
-$$;
 
+$ $;
 
-ALTER TABLE "user_store" ADD CONSTRAINT "users_fk0" FOREIGN KEY ("id_user") REFERENCES "users"("id");
+ALTER TABLE
+	"user_store"
+ADD
+	CONSTRAINT "users_fk0" FOREIGN KEY ("id_user") REFERENCES "users"("id");
 
-ALTER TABLE "user_store" ADD CONSTRAINT "store_fk0" FOREIGN KEY ("id_store") REFERENCES "stores"("id");
+ALTER TABLE
+	"user_store"
+ADD
+	CONSTRAINT "store_fk0" FOREIGN KEY ("id_store") REFERENCES "stores"("id");
 
-ALTER TABLE "catalog" ADD CONSTRAINT "catalog_fk0" FOREIGN KEY ("id_store") REFERENCES "stores"("id");
+ALTER TABLE
+	"catalog"
+ADD
+	CONSTRAINT "catalog_fk0" FOREIGN KEY ("id_store") REFERENCES "stores"("id");
 
-ALTER TABLE "catalog" ADD CONSTRAINT "catalog_fk1" FOREIGN KEY ("id_book") REFERENCES "books"("id");
+ALTER TABLE
+	"catalog"
+ADD
+	CONSTRAINT "catalog_fk1" FOREIGN KEY ("isbn_10_code_book") REFERENCES "books"("isbn_10_code");
+
+ALTER TABLE
+	"books"
+ADD
+	CONSTRAINT books_isbn_10_unique UNIQUE ("isbn_10_code");

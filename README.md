@@ -57,9 +57,11 @@ erros com nosso back-end.
 {
   "/stores": {
     "DELETE /sebos/{sebo_id}": "Exclui sebo, necessita de token de um funcionário com role 'worker' ou 'owner'",
+
     "GET /sebos/{sebos_id}": {
       "Descrição": "Retorna informações de um sebo com base no ID"
     },
+
     "GET /stores?page=<>&per_page=<>": {
       "Descrição": "Lista sebos, com paginação",
       "Parâmetros (de URL)": {
@@ -67,6 +69,7 @@ erros com nosso back-end.
         "per_page": "Número de sebos por página"
       }
     },
+
     "POST /sebos/": {
       "Adicional: parâmetro workers": {
         "Descrição": "O parâmetro 'workers' deve ser uma lista de objetos com o formato descrito abaixo",
@@ -75,7 +78,9 @@ erros com nosso back-end.
           "user_id": "ID do usuário a ser adicionado como funcionário do sebo"
         }
       },
+
       "Descrição": "Cria sebo",
+
       "Parâmetros (JSON)": [
         "name",
         "cnpj",
@@ -88,8 +93,10 @@ erros com nosso back-end.
         "workers"
       ]
     },
+
     "PUT /sebos/{sebo_id}": {
       "Função": "Atualiza um sebo, necessita de token de um funcionário com role 'worker' ou 'owner'",
+
       "Parâmetros (JSON)": [
         "name",
         "cnpj",
@@ -107,18 +114,23 @@ erros com nosso back-end.
     "DELETE /users/{user_id}": {
       "Descrição": "Exclui usuário, necessita de token do dono da conta"
     },
+
     "GET /users/{user_id}": {
       "Descrição": "Retorna informações de usuário com base no ID"
     },
+
     "GET /users?page=<>&per_page=<>": {
       "Descrição": "Lista usuários, com paginação",
+
       "Parâmetros (de URL)": {
         "page": "Página",
         "per_page": "Número de usuários por página"
       }
     },
+
     "POST /users/": {
       "Descrição": "Cria usuário",
+
       "Parâmetros (JSON)": [
         "nome",
         "email",
@@ -128,15 +140,19 @@ erros com nosso back-end.
         "is_activated"
       ]
     },
+
     "POST /users/login": {
       "Descrição": "Faz login e retorna token JWT",
+
       "Parâmetros (JSON)": [
         "login",
         "password"
       ]
     },
+
     "PUT /users/{user_id}": {
       "Descrição": "Atualiza um usuário, necessita de token do dono da conta",
+
       "Parâmetros (JSON)": [
         "name",
         "email",
@@ -159,6 +175,7 @@ erros com nosso back-end.
 
     "GET /books?page=<>&per_page=<>": {
       "Descrição": "Lista livros, com paginação",
+
       "Parâmetros (de URL)": {
         "page": "Página",
         "per_page": "Número de livros por página"
@@ -167,6 +184,7 @@ erros com nosso back-end.
 
     "POST /books/": {
       "Descrição": "Cria livro",
+
       "Parâmetros (JSON)": [
         "title",
         "description",
@@ -186,6 +204,7 @@ erros com nosso back-end.
 
     "PUT /books/{book_id}": {
       "Descrição": "Atualiza um livro",
+
       "Parâmetros (JSON)": [
         "title",
         "description",
@@ -200,6 +219,53 @@ erros com nosso back-end.
         "publisher",
         "pages",
         "dimentions"
+      ]
+    }
+  },
+
+  "/catalog": {
+    "GET /catalog": {
+      "Descrição": "Lista todos os livros presentes no catálogo"
+    },
+
+    "GET /catalog/{id_store}": {
+      "Descrição": "Lista todos os livros do catálogo de um sebo específico",
+
+      "Parâmetros (de URL)": {
+        "id_store": "ID do sebo"
+      }
+    },
+
+    "POST /catalog": {
+      "Descrição": "Adiciona um livro ao catálogo de um sebo, necessita autenticação JWT",
+
+      "Parâmetros (JSON)": [
+        "store_id",
+        "book_id",
+        "price",
+        "quantity",
+        "state"
+      ]
+    },
+
+    "PUT /catalog": {
+      "Descrição": "Atualiza informações de um livro no catálogo, necessita autenticação JWT",
+
+      "Parâmetros (JSON)": [
+        "store_id",
+        "book_id",
+        "price",
+        "quantity",
+        "state"
+      ]
+    },
+
+    "DELETE /catalog": {
+      "Descrição": "Remove um livro do catálogo, necessita autenticação JWT",
+
+      "Parâmetros (JSON)": [
+        "store_id",
+        "book_id"
       ]
     }
   }
