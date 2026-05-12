@@ -1,5 +1,6 @@
 use axum::{
     Router,
+    http::HeaderValue
 };
 use bb8::Pool;
 use bb8_postgres::PostgresConnectionManager;
@@ -23,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let conn_pool = Pool::builder().build(conn_manager).await?;
 
-    let cors = CorsLayer::new().allow_origin([config.cors_allowed]);
+    let cors = CorsLayer::new().allow_origin(config.cors_allowed.parse::<HeaderValue>()?);
 
     let app = Router::new()
         .merge(make_routes())
