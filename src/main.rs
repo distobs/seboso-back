@@ -1,6 +1,6 @@
 use axum::{
     Router,
-    http::HeaderValue
+    http::{HeaderValue, Method}
 };
 use bb8::Pool;
 use bb8_postgres::PostgresConnectionManager;
@@ -8,7 +8,7 @@ use seboso_back::{
     routes::make_routes, utils::load_env_vars,
 };
 use tokio_postgres::NoTls;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,7 +24,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let conn_pool = Pool::builder().build(conn_manager).await?;
 
-    let cors = CorsLayer::new().allow_origin(config.cors_allowed.parse::<HeaderValue>()?);
+    let cors = CorsLayer::new()
+    .allow_origin(config.cors_allowed.parse::<HeaderValue>()?)
+    .allow_methods([
+        Method::GET,
+        Method::POST,
+        Method::PUT,
+        Method::DELETE,
+    ])
+    .allow_headers(Any);
 
     let app = Router::new()
         .merge(make_routes())
