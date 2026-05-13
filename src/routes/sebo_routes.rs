@@ -170,6 +170,7 @@ pub fn make_sebo_routes() -> Router<DbPool> {
         .route("/stores", get(list_stores))
         .route("/stores", post(create_store))
         .route("/stores/{store_id}", get(get_store_id))
-        .route("/stores/{store_id}", put(update_store).delete(delete_store))
-        .layer(middleware::from_fn(jwt_middleware))
+        .route("/stores/{store_id}",
+            put(update_store).delete(delete_store)
+            .layer(middleware::from_fn(jwt_middleware)))
 }
