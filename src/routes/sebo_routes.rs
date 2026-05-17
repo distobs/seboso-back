@@ -51,6 +51,7 @@ async fn list_stores(
 
 async fn create_store(
     State(pool): State<DbPool>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateStore>,
 ) -> impl IntoResponse {
     let mut conn = pool.get().await.unwrap();
@@ -75,6 +76,13 @@ async fn create_store(
         .await.unwrap();
 
     let store_id: i64 = row.get("id");
+
+    let owner_id = claims.sub;
+
+    tran.execute(
+        "INSERT INTO user_store (id_user, id_store, role) VALUES ($1, $2, $3)",
+        &[&owner_id, &store_id, &"owner"],
+    ).await.unwrap();
 
     for worker in &payload.workers {
         tran.execute(
@@ -156,14 +164,14 @@ async fn delete_store(
 pub fn make_sebo_routes() -> Router<DbPool> {
     let public_routes = Router::new()
         .route("/stores", get(list_stores))
-        .route("/stores/{store_id}", get(get_store_id))
-        .route("/stores", post(create_store));
+        .route("/stores/{store_id}", get(get_store_id));
 
     let protected_routes = Router::new()
         .route(
             "/stores/{store_id}",
                 put(update_store)
                 .delete(delete_store)
+                .post(create_store)
                 .layer(middleware::from_fn(jwt_middleware))
         );
 
