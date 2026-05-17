@@ -5,10 +5,10 @@ use crate::{
 use axum::{
     Json, Router,
     extract::{self, Extension, Path, Query, State},
-    http::StatusCode,
+    http::{StatusCode},
     middleware,
-    response::IntoResponse,
-    routing::{get, post},
+    response::{IntoResponse},
+    routing::{get, post, put},
 };
 use bcrypt::{DEFAULT_COST, hash, verify};
 
@@ -100,39 +100,40 @@ async fn create_user(
     .await
     .unwrap();
 
-    Json(ApiResponse {
-        success: true,
-        message: "Usuário criado.".to_string(),
-    })
+    ApiResponse::ok()
 }
 
 async fn login_user(
     State(pool): State<DbPool>,
     Json(payload): Json<LoginUser>,
-) -> Json<ApiResponse> {
+) -> impl IntoResponse {
     let conn = pool.get().await.unwrap();
 
     let row = conn
-        .query_one("SELECT * FROM users WHERE login = $1", &[&payload.login])
+        .query_opt("SELECT * FROM users WHERE login = $1", &[&payload.login])
         .await
         .unwrap();
 
+    let Some(row) = row else {
+        return ApiResponse::err_msg(
+            "Usuário não encontrado.",
+            StatusCode::NOT_FOUND
+        );
+    };
+
     let user = User::from(&row);
 
-    let is_valid = verify(&payload.password, &user.pw_hash).unwrap();
+    let is_valid = verify(&payload.password, &user.pw_hash).unwrap_or(false);
 
     if is_valid {
         let token = generate_jwt(user.id.try_into().unwrap());
 
-        return Json(ApiResponse {
-            success: true,
-            message: token,
-        });
+        return ApiResponse::ok_msg(token);
     } else {
-        return Json(ApiResponse {
-            success: false,
-            message: "Login ou Senha incorretos.".to_string(),
-        });
+        return ApiResponse::err_msg(
+            "Login ou senha incorretos",
+            StatusCode::FORBIDDEN
+        );
     }
 }
 
@@ -141,10 +142,9 @@ async fn update_user(
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateUser>,
-) -> Result<impl IntoResponse, StatusCode> {
-    // safety check
+) -> impl IntoResponse {
     if claims.sub != user_id {
-        return Err(StatusCode::FORBIDDEN);
+        return ApiResponse::err(StatusCode::FORBIDDEN)
     }
 
     let conn = pool.get().await.unwrap();
@@ -171,19 +171,16 @@ async fn update_user(
     .await
     .unwrap();
 
-    Ok(Json(ApiResponse {
-        success: true,
-        message: format!("Usuário {} modificado.", &payload.name).to_string(),
-    }))
+    ApiResponse::ok_msg(format!("Usuário {} modificado.", &payload.name))
 }
 
 async fn delete_user(
     Path(user_id): Path<i64>,
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> impl IntoResponse {
     if claims.sub != user_id {
-        return Err(StatusCode::FORBIDDEN);
+        return ApiResponse::err(StatusCode::FORBIDDEN);
     }
 
     let conn = pool.get().await.unwrap();
@@ -192,23 +189,20 @@ async fn delete_user(
         .await
         .unwrap();
 
-    Ok(Json(ApiResponse {
-        success: true,
-        message: format!("Usuário {} deletado.", &user_id).to_string(),
-    }))
+    ApiResponse::ok_msg(format!("Usuário {} deletado.", &user_id))
 }
 
 pub fn make_user_routes() -> Router<DbPool> {
     let public_routes = Router::new()
+        .route("/users", get(list_users))
         .route("/users", post(create_user))
-        .route("/users/login", post(login_user));
+        .route("/users/login", post(login_user))
+        .route("/users/{user_id}", get(get_user_id));
 
     let protected_routes = Router::new()
-        .route("/users", get(list_users))
         .route(
             "/users/{user_id}",
-            get(get_user_id)
-                .put(update_user)
+                put(update_user)
                 .delete(delete_user),
         )
         .layer(middleware::from_fn(jwt_middleware));

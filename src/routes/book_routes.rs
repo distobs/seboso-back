@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     middleware,
     response::IntoResponse,
-    routing::{get, put},
+    routing::{get, put, post},
 };
 
 use crate::{
@@ -103,17 +103,14 @@ async fn create_book(
     .await
     .unwrap();
 
-    Json(ApiResponse {
-        success: true,
-        message: "Livro criado.".to_string(),
-    })
+    ApiResponse::ok_msg("Livro criado.")
 }
 
 async fn update_book(
     Path(book_id): Path<i64>,
     State(pool): State<DbPool>,
     Json(payload): Json<UpdateBookDto>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> impl IntoResponse {
     let conn = pool.get().await.unwrap();
 
     conn.execute(
@@ -154,19 +151,16 @@ async fn update_book(
     .await
     .unwrap();
 
-    Ok(Json(ApiResponse {
-        success: true,
-        message: format!("Livro {} modificado.", &payload.title.unwrap()),
-    }))
+    ApiResponse::ok_msg(format!("Livro {:?} modificado.", &payload.title))
 }
 
 async fn delete_book(
     Path(book_id): Path<i64>,
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> impl IntoResponse {
     if claims.sub != book_id {
-        return Err(StatusCode::FORBIDDEN);
+        return ApiResponse::err(StatusCode::FORBIDDEN);
     }
 
     let conn = pool.get().await.unwrap();
@@ -175,16 +169,26 @@ async fn delete_book(
         .await
         .unwrap();
 
-    Ok(Json(ApiResponse {
-        success: true,
-        message: format!("Usuário {} deletado.", &book_id).to_string(),
-    }))
+    ApiResponse::ok_msg(format!("Livro {} deletado.", &book_id))
 }
 
 pub fn make_book_routes() -> Router<DbPool> {
-    Router::new()
-        .route("/books", get(list_books).post(create_book))
-        .route("/books/isbn", get(get_book_isbn10))
-        .route("/books/{book_id}", put(update_book).delete(delete_book))
-        .layer(middleware::from_fn(jwt_middleware))
+    let public_routes = Router::new()
+        .route("/books", get(list_books))
+        .route("/books/isbn", get(get_book_isbn10));
+    
+    let protected_routes = Router::new()
+        .route(
+            "/books",
+                post(create_book)
+                .layer(middleware::from_fn(jwt_middleware))
+        )
+        .route(
+            "/books/{book_id}",
+                put(update_book)
+                .delete(delete_book)
+                .layer(middleware::from_fn(jwt_middleware))
+        );
+
+    public_routes.merge(protected_routes)
 }

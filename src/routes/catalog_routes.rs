@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     middleware,
     response::IntoResponse,
-    routing::{get, post, put},
+    routing::{get, post},
 };
 
 use crate::{
@@ -76,17 +76,14 @@ async fn create_book_in_catalog(
     .await
     .unwrap();
 
-    Json(ApiResponse {
-        success: true,
-        message: "Produto criado.".to_string(),
-    })
+    ApiResponse::ok_msg("Produto criado.")
 }
 
 async fn update_book_in_catalog(
     Query(params): Query<CatalogQuery>,
     State(pool): State<DbPool>,
     Json(payload): Json<UpdateCatalog>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> impl IntoResponse {
     let conn = pool.get().await.unwrap();
 
     conn.execute(
@@ -110,19 +107,16 @@ async fn update_book_in_catalog(
     .await
     .unwrap();
 
-    Ok(Json(ApiResponse {
-        success: true,
-        message: format!("Produto {} modificado.", &payload.isbn_10_code_book),
-    }))
+    ApiResponse::ok_msg(format!("Produto {} modificado.", &payload.isbn_10_code_book))
 }
 
 async fn delete_book_in_catalog(
     Query(params): Query<CatalogQuery>,
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> impl IntoResponse {
     if claims.sub != params.id_store {
-        return Err(StatusCode::FORBIDDEN);
+        return ApiResponse::err(StatusCode::FORBIDDEN);
     }
 
     let conn = pool.get().await.unwrap();
@@ -134,24 +128,26 @@ async fn delete_book_in_catalog(
     .await
     .unwrap();
 
-    Ok(Json(ApiResponse {
-        success: true,
-        message: format!(
+    ApiResponse::ok_msg(format!(
             "Produto {} deletado do catalogo {}.",
             &params.isbn_10_code_book, &params.id_store
         )
-        .to_string(),
-    }))
+    )
 }
 
 pub fn make_catalog_routes() -> Router<DbPool> {
-    Router::new()
+    let public_routes = Router::new()
         .route("/catalog", get(list_catalog))
-        .route("/catalog/{id_store}", get(list_catalog_by_store))
-        .route("/catalog", post(create_book_in_catalog))
+        .route("/catalog/{store_id}", get(list_catalog_by_store));
+    
+    let protected_routes = Router::new()
         .route(
-            "/catalog",
-            put(update_book_in_catalog).delete(delete_book_in_catalog),
-        )
-        .layer(middleware::from_fn(jwt_middleware))
+            "/catalog/",
+                post(create_book_in_catalog)
+                .put(update_book_in_catalog)
+                .delete(delete_book_in_catalog)
+                .layer(middleware::from_fn(jwt_middleware))
+        );
+
+    public_routes.merge(protected_routes)
 }

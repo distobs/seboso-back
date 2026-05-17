@@ -1,5 +1,5 @@
 use crate::{
-    types::{ApiError, ApiResponse, CreateStore, DbPool, Pagination, Store, UserStore},
+    types::{ApiResponse, CreateStore, DbPool, Pagination, Store, UserStore},
     utils::{Claims, jwt_middleware},
 };
 use axum::{
@@ -52,12 +52,10 @@ async fn list_stores(
 async fn create_store(
     State(pool): State<DbPool>,
     Json(payload): Json<CreateStore>,
-) -> Result<Json<ApiResponse>, ApiError> {
-    let mut conn = pool
-        .get()
-        .await
-        .map_err(|_| ApiError::BadReq("DB pool error".into()))?;
-    let tran = conn.transaction().await?;
+) -> impl IntoResponse {
+    let mut conn = pool.get().await.unwrap();
+
+    let tran = conn.transaction().await.unwrap();
 
     let row = tran
         .query_one(
@@ -74,7 +72,7 @@ async fn create_store(
                 &payload.cep,
             ],
         )
-        .await?;
+        .await.unwrap();
 
     let store_id: i64 = row.get("id");
 
@@ -83,15 +81,12 @@ async fn create_store(
             "INSERT INTO user_store (id_user, id_store, role) VALUES ($1, $2, $3)",
             &[&worker.user_id, &store_id, &worker.role],
         )
-        .await?;
+        .await.unwrap();
     }
 
-    tran.commit().await?;
+    tran.commit().await.unwrap();
 
-    Ok(Json(ApiResponse {
-        success: true,
-        message: "Sebo criado.".to_string(),
-    }))
+    ApiResponse::ok_msg("Sebo criado.")
 }
 
 async fn update_store(
@@ -99,12 +94,11 @@ async fn update_store(
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateStore>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> impl IntoResponse {
     if !UserStore::check_role_in_store(claims.sub, store_id, &["worker", "owner"], &pool)
-        .await
-        .unwrap()
+        .await.unwrap()
     {
-        return Err(StatusCode::FORBIDDEN);
+        return ApiResponse::err(StatusCode::FORBIDDEN);
     }
 
     let conn = pool.get().await.unwrap();
@@ -135,22 +129,19 @@ async fn update_store(
     .await
     .unwrap();
 
-    Ok(Json(ApiResponse {
-        success: true,
-        message: format!("Sebo {} modificado.", &payload.name).to_string(),
-    }))
+    ApiResponse::ok_msg(format!("Sebo {} modificado.", &payload.name))
 }
 
 async fn delete_store(
     Path(store_id): Path<i64>,
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> impl IntoResponse {
     if !UserStore::check_role_in_store(claims.sub, store_id, &["worker", "owner"], &pool)
         .await
         .unwrap()
     {
-        return Err(StatusCode::FORBIDDEN);
+        return ApiResponse::err(StatusCode::FORBIDDEN);
     }
 
     let conn = pool.get().await.unwrap();
@@ -159,17 +150,22 @@ async fn delete_store(
         .await
         .unwrap();
 
-    Ok(Json(ApiResponse {
-        success: true,
-        message: format!("Sebo {} deletado.", &store_id).to_string(),
-    }))
+    ApiResponse::ok_msg(format!("Sebo {} deletado.", &store_id))
 }
 
 pub fn make_sebo_routes() -> Router<DbPool> {
-    Router::new()
+    let public_routes = Router::new()
         .route("/stores", get(list_stores))
-        .route("/stores", post(create_store))
         .route("/stores/{store_id}", get(get_store_id))
-        .route("/stores/{store_id}", put(update_store).delete(delete_store))
-        .layer(middleware::from_fn(jwt_middleware))
+        .route("/stores", post(create_store));
+
+    let protected_routes = Router::new()
+        .route(
+            "/stores/{store_id}",
+                put(update_store)
+                .delete(delete_store)
+                .layer(middleware::from_fn(jwt_middleware))
+        );
+
+    public_routes.merge(protected_routes)
 }
