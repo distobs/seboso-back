@@ -8,7 +8,7 @@ use axum::{
     http::StatusCode,
     middleware,
     response::IntoResponse,
-    routing::{get, post, put},
+    routing::{get, put},
 };
 
 async fn get_store_id(Path(store_id): Path<usize>, State(pool): State<DbPool>) -> Json<Store> {
