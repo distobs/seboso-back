@@ -1,13 +1,14 @@
-use crate::types::DbPool;
+use crate::{types::db_types::DbPool};
 use axum::{Json, Router, routing::get};
 use serde_json::{Value, json};
 pub mod book_routes;
+pub mod catalog_routes;
 pub mod sebo_routes;
 pub mod user_routes;
-pub mod catalog_routes;
 
 async fn index_route() -> Json<Value> {
     Json(json!({
+        "DICA": "parâmetros JSON marcados com '?' são opcionais",
         "/users": {
             "GET /users?page=<>&per_page=<>": {
                 "Descrição": "Lista usuários, com paginação",
@@ -26,30 +27,44 @@ async fn index_route() -> Json<Value> {
                     "email",
                     "login",
                     "password",
-                    "cell_number",
-                    "is_activated",
+                    "cell_number?",
                 ]
             },
             "POST /users/login": {
                 "Descrição": "Faz login e retorna token JWT",
+                "Retornos": {
+                    "200": "Login bem-sucedido, retorna token JWT",
+                    "403": "Credenciais inválidas",
+                    "404": "Usuário não encontrado",
+                },
                 "Parâmetros (JSON)": [
                     "login",
                     "password",
                 ],
             },
             "PUT /users/{user_id}": {
-                "Descrição": "Atualiza um usuário, necessita de token do dono da conta",
+                "Descrição": "Atualiza um usuário",
+                "Permissões": "Usuário deve ser dono da conta ou admin.",
+                "Retornos": {
+                    "200": "Atualização bem-sucedida",
+                    "403": "Permissão negada",
+                },
                 "Parâmetros (JSON)": [
-                    "name",
-                    "email",
-                    "login",
+                    "name?",
+                    "email?",
+                    "login?",
                     "password",
-                    "cell_number",
-                    "is_activated",
+                    "cell_number?",
+                    "is_activated?",
                 ]
             },
             "DELETE /users/{user_id}": {
-                "Descrição": "Exclui usuário, necessita de token do dono da conta",
+                "Descrição": "Exclui usuário.",
+                "Permissões": "Usuário deve ser dono da conta ou admin.",
+                "Retornos": {
+                    "200": "Exclusão bem-sucedida",
+                    "403": "Permissão negada",
+                }
             }
         },
 
@@ -68,6 +83,11 @@ async fn index_route() -> Json<Value> {
 
             "POST /sebos/": {
                 "Descrição": "Cria sebo",
+                "Permissões": "Necessita de token de usuário logado",
+                "Retornos": {
+                    "200": "Criação bem-sucedida",
+                    "403": "Permissão negada",
+                },
                 "Parâmetros (JSON)": [
                     "name",
                     "cnpj",
@@ -77,34 +97,35 @@ async fn index_route() -> Json<Value> {
                     "state",
                     "city_block",
                     "cep",
-                    "workers",
                 ],
-
-                "Adicional: parâmetro workers": {
-                    "Descrição": "O parâmetro 'workers' deve ser uma lista de objetos com o formato descrito abaixo",
-                    "Formato": {
-                        "user_id": "ID do usuário a ser adicionado como funcionário do sebo",
-                        "role": "Cargo do funcionário dentro do sebo."
-                    },
-                }
             },
 
             "PUT /sebos/{sebo_id}": {
-                "Função": "Atualiza um sebo, necessita de token de um funcionário com role 'worker' ou 'owner'",
+                "Função": "Atualiza um sebo",
+                "Permissões": "Funcionário com role 'worker' ou 'owner', ou admin",
+                "Retornos": {
+                    "200": "Atualização bem-sucedida",
+                    "403": "Permissão negada",
+                },
                 "Parâmetros (JSON)": [
-                    "name",
-                    "cnpj",
-                    "street",
-                    "number",
-                    "city",
-                    "state",
-                    "city_block",
-                    "cep",
+                    "name?",
+                    "cnpj?",
+                    "street?",
+                    "number?",
+                    "city?",
+                    "state?",
+                    "city_block?",
+                    "cep?",
                 ]
             },
 
             "DELETE /sebos/{sebo_id}": {
-                "Descrição": "Exclui sebo, necessita de token de um funcionário com role 'worker' ou 'owner'",
+                "Descrição": "Exclui sebo",
+                "Permissões": "Necessita de token de um funcionário com role 'worker' ou 'owner', ou admin",
+                "Retornos": {
+                    "200": "Exclusão bem-sucedida",
+                    "403": "Permissão negada",
+                }
             },
         },
 
@@ -123,44 +144,60 @@ async fn index_route() -> Json<Value> {
 
             "POST /books/": {
                 "Descrição": "Cria livro",
+                "Permissões": "Necessita de token de usuário logado",
+                "Retornos": {
+                    "200": "Criação bem-sucedida",
+                    "403": "Permissão negada",
+                },
                 "Parâmetros (JSON)": [
                     "title",
-                    "description",
-                    "launched_at",
-                    "cover_type",
                     "author",
-                    "edition",
-                    "language",
-                    "genre",
                     "isbn_10_code",
-                    "isbn_13_code",
-                    "publisher",
-                    "pages",
-                    "dimentions",
+                    "description?",
+                    "published_at?",
+                    "cover_type?",
+                    "edition?",
+                    "language?",
+                    "genre?",
+                    "isbn_13_code?",
+                    "publisher?",
+                    "pages?",
+                    "dimensions?",
                 ]
             },
 
             "PUT /books/{book_id}": {
                 "Descrição": "Atualiza um livro",
+                "Permissões": "Usuário deve ser admin.",
+                "Retornos": {
+                    "200": "Atualização bem-sucedida",
+                    "403": "Permissão negada",
+                },
+                
                 "Parâmetros (JSON)": [
-                    "title",
-                    "description",
-                    "launched_at",
-                    "cover_type",
-                    "author",
-                    "edition",
-                    "language",
-                    "genre",
-                    "isbn_10_code",
-                    "isbn_13_code",
-                    "publisher",
-                    "pages",
-                    "dimentions",
+                    "title?",
+                    "description?",
+                    "published_at?",
+                    "cover_type?",
+                    "author?",
+                    "edition?",
+                    "language?",
+                    "genre?",
+                    "isbn_10_code?",
+                    "isbn_13_code?",
+                    "publisher?",
+                    "pages?",
+                    "dimensions?",
                 ]
             },
 
             "DELETE /books/{book_id}": {
                 "Descrição": "Exclui livro",
+                "Permissões": "Usuário deve ser admin.",
+                "Retornos": {
+                    "200": "Exclusão bem-sucedida",
+                    "403": "Permissão negada",
+                },
             }
         },
 
@@ -169,15 +206,20 @@ async fn index_route() -> Json<Value> {
                 "Descrição": "Lista todos os livros presentes no catálogo",
             },
 
-            "GET /catalog/{id_store}": {
+            "GET /catalog/{store_id}": {
                 "Descrição": "Lista todos os livros do catálogo de um sebo específico",
                 "Parâmetros (de URL)": {
-                    "id_store": "ID do sebo",
+                    "store_id": "ID do sebo",
                 }
             },
 
             "POST /catalog": {
-                "Descrição": "Adiciona um livro ao catálogo de um sebo, necessita autenticação JWT",
+                "Descrição": "Adiciona um livro ao catálogo de um sebo",
+                "Permissões": "Necessita de token de 'worker' ou 'owner' do sebo, ou admin",
+                "Retornos": {
+                    "200": "Criação bem-sucedida",
+                    "403": "Permissão negada",
+                },
                 "Parâmetros (JSON)": [
                     "store_id",
                     "book_id",
@@ -188,18 +230,28 @@ async fn index_route() -> Json<Value> {
             },
 
             "PUT /catalog": {
-                "Descrição": "Atualiza informações de um livro no catálogo, necessita autenticação JWT",
+                "Descrição": "Atualiza informações de um livro no catálogo",
+                "Permissões": "Necessita de token de 'worker' ou 'owner' do sebo, ou admin",
+                "Retornos": {
+                    "200": "Atualização bem-sucedida",
+                    "403": "Permissão negada",
+                },
                 "Parâmetros (JSON)": [
-                    "store_id",
-                    "book_id",
-                    "price",
-                    "quantity",
-                    "state",
+                    "store_id?",
+                    "book_id?",
+                    "price?",
+                    "quantity?",
+                    "state?",
                 ]
             },
 
             "DELETE /catalog": {
-                "Descrição": "Remove um livro do catálogo, necessita autenticação JWT",
+                "Descrição": "Remove um livro do catálogo",
+                "Permissões": "Necessita de token de 'worker' ou 'owner' do sebo, ou admin",
+                "Retornos": {
+                    "200": "Remoção bem-sucedida",
+                    "403": "Permissão negada",
+                },
                 "Parâmetros (JSON)": [
                     "store_id",
                     "book_id",
@@ -210,7 +262,7 @@ async fn index_route() -> Json<Value> {
 }
 
 pub fn make_routes() -> Router<DbPool> {
-        Router::new()
+    Router::new()
         .route("/", get(index_route))
         .merge(user_routes::make_user_routes())
         .merge(sebo_routes::make_sebo_routes())

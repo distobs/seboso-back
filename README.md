@@ -188,7 +188,7 @@ erros com nosso back-end.
       "Parâmetros (JSON)": [
         "title",
         "description",
-        "launched_at",
+        "published_at",
         "cover_type",
         "author",
         "edition",
@@ -198,7 +198,7 @@ erros com nosso back-end.
         "isbn_13_code",
         "publisher",
         "pages",
-        "dimentions"
+        "dimensions"
       ]
     },
 
@@ -208,7 +208,7 @@ erros com nosso back-end.
       "Parâmetros (JSON)": [
         "title",
         "description",
-        "launched_at",
+        "published_at",
         "cover_type",
         "author",
         "edition",
@@ -218,7 +218,7 @@ erros com nosso back-end.
         "isbn_13_code",
         "publisher",
         "pages",
-        "dimentions"
+        "dimensions"
       ]
     }
   },
@@ -228,11 +228,11 @@ erros com nosso back-end.
       "Descrição": "Lista todos os livros presentes no catálogo"
     },
 
-    "GET /catalog/{id_store}": {
+    "GET /catalog/{store_id}": {
       "Descrição": "Lista todos os livros do catálogo de um sebo específico",
 
       "Parâmetros (de URL)": {
-        "id_store": "ID do sebo"
+        "store_id": "ID do sebo"
       }
     },
 

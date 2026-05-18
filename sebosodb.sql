@@ -2,10 +2,11 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"id" bigserial NOT NULL UNIQUE,
 	"name" varchar(255) NOT NULL,
 	"email" varchar(255) NOT NULL,
-	"login" varchar(255) NOT NULL,
+	"login" varchar(255) NOT NULL UNIQUE,
 	"password" varchar(255) NOT NULL,
 	"cell_number" varchar(255),
 	"is_admin" boolean NOT NULL DEFAULT FALSE,
+	"is_activated" boolean NOT NULL DEFAULT TRUE,
 	"created_at" timestamp with time zone NOT NULL DEFAULT NOW(),
 	"updated_at" timestamp with time zone NOT NULL DEFAULT NOW(),
 	PRIMARY KEY ("id")
@@ -48,18 +49,18 @@ CREATE TABLE IF NOT EXISTS "stores" (
 
 CREATE TABLE IF NOT EXISTS "user_store" (
 	"role" varchar(255) NOT NULL,
-	"id_user" bigint NOT NULL,
-	"id_store" bigint NOT NULL,
-	PRIMARY KEY ("id_user", "id_store")
+	"user_id" bigint NOT NULL,
+	"store_id" bigint NOT NULL,
+	PRIMARY KEY ("user_id", "store_id")
 );
 
 CREATE TABLE IF NOT EXISTS "catalog" (
-	"id_store" bigint NOT NULL,
+	"store_id" bigint NOT NULL,
 	"isbn_10_code_book" bigint NOT NULL,
 	"price" real NOT NULL,
 	"quantity" bigint NOT NULL,
 	"description" varchar(255) NOT NULL,
-	PRIMARY KEY ("id_store", "isbn_10_code_book")
+	PRIMARY KEY ("store_id", "isbn_10_code_book")
 );
 
 CREATE
@@ -93,17 +94,17 @@ $ $;
 ALTER TABLE
 	"user_store"
 ADD
-	CONSTRAINT "users_fk0" FOREIGN KEY ("id_user") REFERENCES "users"("id");
+	CONSTRAINT "users_fk0" FOREIGN KEY ("user_id") REFERENCES "users"("id");
 
 ALTER TABLE
 	"user_store"
 ADD
-	CONSTRAINT "store_fk0" FOREIGN KEY ("id_store") REFERENCES "stores"("id");
+	CONSTRAINT "store_fk0" FOREIGN KEY ("store_id") REFERENCES "stores"("id");
 
 ALTER TABLE
 	"catalog"
 ADD
-	CONSTRAINT "catalog_fk0" FOREIGN KEY ("id_store") REFERENCES "stores"("id");
+	CONSTRAINT "catalog_fk0" FOREIGN KEY ("store_id") REFERENCES "stores"("id");
 
 ALTER TABLE
 	"catalog"

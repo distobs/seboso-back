@@ -3,26 +3,35 @@ use axum::{
     extract::{self, Path, Query, State},
     http::StatusCode,
     middleware,
-    response::IntoResponse,
     routing::{get, post},
 };
 
 use crate::{
-    types::{ApiResponse, Catalog, CatalogQuery, DbPool, Pagination, UpdateCatalog},
-    utils::{Claims, jwt_middleware},
+    models::{
+        catalog_model::{Catalog, CatalogQuery, UpdateCatalog},
+    },
+    types::{
+        response_types::ApiResponse,
+        db_types:: DbPool
+    },
+    utils::pagination_utils::Pagination,
+    auth::{
+        jwt_auth::{Claims, jwt_middleware},
+        catalog_auth::catalog_auth
+    }
 };
 
 // /catalog?page=1&per_page=10
 async fn list_catalog(
     Query(pagination): Query<Pagination>,
     State(pool): State<DbPool>,
-) -> Json<Vec<Catalog>> {
+) -> Result<Json<Vec<Catalog>>, ApiResponse> {
     let page = pagination.page.unwrap_or(1);
     let per_page = pagination.per_page.unwrap_or(10);
 
     let offset = (page - 1) * per_page;
 
-    let conn = pool.get().await.unwrap();
+    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     let rows = conn
         .query(
@@ -30,43 +39,43 @@ async fn list_catalog(
             &[&(per_page as i64), &(offset as i64)],
         )
         .await
-        .unwrap();
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     let catalogs: Vec<Catalog> = rows.iter().map(Catalog::from).collect();
 
-    Json(catalogs)
+    Ok(Json(catalogs))
 }
 
 async fn list_catalog_by_store(
-    Path(id_store): Path<usize>,
+    Path(store_id): Path<usize>,
     State(pool): State<DbPool>,
-) -> Json<Vec<Catalog>> {
-    let conn = pool.get().await.unwrap();
+) -> Result<Json<Vec<Catalog>>, ApiResponse> {
+    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     let rows = conn
         .query(
-            "SELECT * FROM catalog WHERE id_store = $1",
-            &[&(id_store as i64)],
+            "SELECT * FROM catalog WHERE store_id = $1",
+            &[&(store_id as i64)],
         )
         .await
-        .unwrap();
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     let catalogs: Vec<Catalog> = rows.iter().map(Catalog::from).collect();
 
-    Json(catalogs)
+    Ok(Json(catalogs))
 }
 
 async fn create_book_in_catalog(
     State(pool): State<DbPool>,
     extract::Json(payload): extract::Json<Catalog>,
-) -> impl IntoResponse {
-    let conn = pool.get().await.unwrap();
+) -> Result<ApiResponse, ApiResponse> {
+    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
-        "INSERT INTO catalog (id_store, isbn_10_code_book, price, quantity, description)
+        "INSERT INTO catalog (store_id, isbn_10_code_book, price, quantity, description)
          VALUES ($1, $2, $3, $4, $5)",
         &[
-            &payload.id_store,
+            &payload.store_id,
             &payload.isbn_10_code_book,
             &payload.price,
             &payload.quantity,
@@ -74,80 +83,88 @@ async fn create_book_in_catalog(
         ],
     )
     .await
-    .unwrap();
+    .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    ApiResponse::ok_msg("Produto criado.")
+    Ok(ApiResponse::ok_msg("Produto criado."))
 }
 
 async fn update_book_in_catalog(
     Query(params): Query<CatalogQuery>,
     State(pool): State<DbPool>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<UpdateCatalog>,
-) -> impl IntoResponse {
-    let conn = pool.get().await.unwrap();
+) -> Result<ApiResponse, ApiResponse> {
+    let authorized = catalog_auth(&claims, params.store_id, &pool).await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+    
+    if !authorized {
+        return Err(ApiResponse::err(StatusCode::FORBIDDEN));
+    }
+    
+    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
         "
         UPDATE catalog
-        SET isbn_10_code_book = $1,
-            price = $2,
-            quantity = $3,
-            description = $4
-        WHERE id_store = $5 AND isbn_10_code_book = $6
+        SET isbn_10_code_book = COALESCE($1, isbn_10_code_book),
+            price = COALESCE($2, price),
+            quantity = COALESCE($3, quantity),
+            description = COALESCE($4, description)
+        WHERE store_id = $5 AND isbn_10_code_book = $6
         ",
         &[
             &payload.isbn_10_code_book,
             &payload.price,
             &payload.quantity,
             &payload.description,
-            &params.id_store,
+            &params.store_id,
             &params.isbn_10_code_book,
         ],
     )
     .await
-    .unwrap();
+    .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    ApiResponse::ok_msg(format!("Produto {} modificado.", &payload.isbn_10_code_book))
+    Ok(ApiResponse::ok_msg(format!(
+        "Produto {} modificado.",
+        &payload.isbn_10_code_book
+    )))
 }
 
 async fn delete_book_in_catalog(
     Query(params): Query<CatalogQuery>,
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
-) -> impl IntoResponse {
-    if claims.sub != params.id_store {
-        return ApiResponse::err(StatusCode::FORBIDDEN);
+) -> Result<ApiResponse, ApiResponse> {
+    if claims.sub != params.store_id {
+        return Err(ApiResponse::err(StatusCode::FORBIDDEN));
     }
 
-    let conn = pool.get().await.unwrap();
+    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
-        "DELETE FROM catalog WHERE id_store = $1 AND isbn_10_code_book = $2",
-        &[&params.id_store, &params.isbn_10_code_book],
+        "DELETE FROM catalog WHERE store_id = $1 AND isbn_10_code_book = $2",
+        &[&params.store_id, &params.isbn_10_code_book],
     )
     .await
-    .unwrap();
+    .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    ApiResponse::ok_msg(format!(
-            "Produto {} deletado do catalogo {}.",
-            &params.isbn_10_code_book, &params.id_store
-        )
-    )
+    Ok(ApiResponse::ok_msg(format!(
+        "Produto {} deletado do catalogo {}.",
+        &params.isbn_10_code_book, &params.store_id
+    )))
 }
 
 pub fn make_catalog_routes() -> Router<DbPool> {
     let public_routes = Router::new()
         .route("/catalog", get(list_catalog))
         .route("/catalog/{store_id}", get(list_catalog_by_store));
-    
-    let protected_routes = Router::new()
-        .route(
-            "/catalog/",
-                post(create_book_in_catalog)
-                .put(update_book_in_catalog)
-                .delete(delete_book_in_catalog)
-                .layer(middleware::from_fn(jwt_middleware))
-        );
+
+    let protected_routes = Router::new().route(
+        "/catalog/",
+        post(create_book_in_catalog)
+            .put(update_book_in_catalog)
+            .delete(delete_book_in_catalog)
+            .layer(middleware::from_fn(jwt_middleware)),
+    );
 
     public_routes.merge(protected_routes)
 }

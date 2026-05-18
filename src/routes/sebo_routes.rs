@@ -1,40 +1,37 @@
 use crate::{
-    types::{ApiResponse, CreateStore, DbPool, Pagination, Store, UserStore},
-    utils::{Claims, jwt_middleware},
+    auth::{
+        jwt_auth::{Claims, jwt_middleware}, store_auth::store_auth
+    }, models::store_model::{
+        CreateStore,
+        Store,
+        UpdateStore
+    }, types::{
+        db_types::DbPool, response_types::ApiResponse
+    }, utils::{pagination_utils::Pagination}
 };
+
 use axum::{
     Extension, Router,
     extract::{Json, Path, Query, State},
     http::StatusCode,
     middleware,
-    response::IntoResponse,
-    routing::{get, put},
+    routing::{delete, get, post},
 };
 
-async fn get_store_id(Path(store_id): Path<usize>, State(pool): State<DbPool>) -> Json<Store> {
-    let conn = pool.get().await.unwrap();
 
-    let row = conn
-        .query_one("SELECT * FROM stores WHERE id = $1", &[&(store_id as i64)])
-        .await
-        .unwrap();
-
-    let store = Store::from(&row);
-
-    Json(store)
-}
-
-/// stores?page=1&per_page=10
+/*
+    GET /stores?page=1&per_page=10 - Lista usuários, com paginação
+*/
 async fn list_stores(
     Query(pagination): Query<Pagination>,
     State(pool): State<DbPool>,
-) -> Json<Vec<Store>> {
+) -> Result<Json<Vec<Store>>, ApiResponse> {
     let page = pagination.page.unwrap_or(1);
     let per_page = pagination.per_page.unwrap_or(10);
 
     let offset = (page - 1) * per_page;
 
-    let conn = pool.get().await.unwrap();
+    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     let rows = conn
         .query(
@@ -42,21 +39,40 @@ async fn list_stores(
             &[&(per_page as i64), &(offset as i64)],
         )
         .await
-        .unwrap();
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     let stores: Vec<Store> = rows.iter().map(Store::from).collect();
 
-    Json(stores)
+    Ok(Json(stores))
 }
 
+/*
+    GET /stores/{id} - Obtém um sebo pelo ID
+*/
+async fn get_store_id(Path(store_id): Path<i64>, State(pool): State<DbPool>) -> Result<Json<Store>, ApiResponse> {
+    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+
+    let row = conn
+        .query_one("SELECT * FROM stores WHERE id = $1", &[&(store_id as i64)])
+        .await
+        .map_err(|_| ApiResponse::err(StatusCode::NOT_FOUND))?;
+
+    let store = Store::from(&row);
+
+    Ok(Json(store))
+}
+
+/*
+    POST /stores - Cria um novo sebo, necessita de token de usuário autenticado.
+*/
 async fn create_store(
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateStore>,
-) -> impl IntoResponse {
-    let mut conn = pool.get().await.unwrap();
+) -> Result<ApiResponse, ApiResponse> {
+    let mut conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    let tran = conn.transaction().await.unwrap();
+    let tran = conn.transaction().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     let row = tran
         .query_one(
@@ -73,54 +89,53 @@ async fn create_store(
                 &payload.cep,
             ],
         )
-        .await.unwrap();
+        .await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     let store_id: i64 = row.get("id");
 
     let owner_id = claims.sub;
 
     tran.execute(
-        "INSERT INTO user_store (id_user, id_store, role) VALUES ($1, $2, $3)",
+        "INSERT INTO user_store (user_id, store_id, role) VALUES ($1, $2, $3)",
         &[&owner_id, &store_id, &"owner"],
-    ).await.unwrap();
+    )
+    .await
+    .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    for worker in &payload.workers {
-        tran.execute(
-            "INSERT INTO user_store (id_user, id_store, role) VALUES ($1, $2, $3)",
-            &[&worker.user_id, &store_id, &worker.role],
-        )
-        .await.unwrap();
-    }
+    tran.commit().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    tran.commit().await.unwrap();
-
-    ApiResponse::ok_msg("Sebo criado.")
+    Ok(ApiResponse::ok_msg("Sebo criado."))
 }
 
+/*
+    PUT /stores/{id} - Atualiza um sebo, necessita de token de um funcionário com role 'worker' ou 'owner'.
+*/
 async fn update_store(
     Path(store_id): Path<i64>,
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
-    Json(payload): Json<CreateStore>,
-) -> impl IntoResponse {
-    if !UserStore::check_role_in_store(claims.sub, store_id, &["worker", "owner"], &pool)
-        .await.unwrap()
-    {
-        return ApiResponse::err(StatusCode::FORBIDDEN);
+    Json(payload): Json<UpdateStore>,
+) -> Result<ApiResponse, ApiResponse> {
+    let authorized = store_auth(&claims, store_id, &pool)
+        .await
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+
+    if !authorized {
+        return Err(ApiResponse::err(StatusCode::FORBIDDEN));
     }
 
-    let conn = pool.get().await.unwrap();
+    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
         "UPDATE stores
-         SET name = $1,
-             cnpj = $2,
-             street = $3,
-             number = $4,
-             city = $5,
-             state = $6,
-             city_block = $7,
-             cep = $8
+         SET name = COALESCE($1, name),
+             cnpj = COALESCE($2, cnpj),
+             street = COALESCE($3, street),
+             number = COALESCE($4, number),
+             city = COALESCE($5, city),
+             state = COALESCE($6, state),
+             city_block = COALESCE($7, city_block),
+             cep = COALESCE($8, cep)
          WHERE id = $9",
         &[
             &payload.name,
@@ -135,45 +150,56 @@ async fn update_store(
         ],
     )
     .await
-    .unwrap();
+    .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    ApiResponse::ok_msg(format!("Sebo {} modificado.", &payload.name))
+    Ok(ApiResponse::ok_msg(format!("Sebo {} modificado.", &store_id)))
 }
 
+/*
+    DELETE /stores/{id} - Exclui um sebo, necessita de token de um funcionário
+    com role 'worker' ou 'owner'.
+*/
 async fn delete_store(
     Path(store_id): Path<i64>,
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
-) -> impl IntoResponse {
-    if !UserStore::check_role_in_store(claims.sub, store_id, &["worker", "owner"], &pool)
+) -> Result<ApiResponse, ApiResponse> {
+    let authorized = store_auth(&claims, store_id, &pool)
         .await
-        .unwrap()
-    {
-        return ApiResponse::err(StatusCode::FORBIDDEN);
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+
+    if !authorized {
+        return Err(ApiResponse::err(StatusCode::FORBIDDEN));
     }
 
-    let conn = pool.get().await.unwrap();
+    let conn = pool.get()
+        .await
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute("DELETE FROM stores WHERE id = $1", &[&store_id])
-        .await
-        .unwrap();
+        .await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    ApiResponse::ok_msg(format!("Sebo {} deletado.", &store_id))
+    Ok(ApiResponse::ok_msg(format!("Sebo {} deletado.", &store_id)))
 }
+
+/*============================================================================*/
 
 pub fn make_sebo_routes() -> Router<DbPool> {
     let public_routes = Router::new()
         .route("/stores", get(list_stores))
         .route("/stores/{store_id}", get(get_store_id));
 
-    let protected_routes = Router::new()
-        .route(
-            "/stores/{store_id}",
-                put(update_store)
-                .delete(delete_store)
-                .post(create_store)
-                .layer(middleware::from_fn(jwt_middleware))
-        );
+    let protected_routes = Router::new().route(
+        "/stores",
+        post(create_store).
+        layer(middleware::from_fn(jwt_middleware))
+    )
+    .route(
+        "/stores/{store_id}",
+            delete(delete_store)
+            .put(update_store)
+            .layer(middleware::from_fn(jwt_middleware)),
+    );
 
     public_routes.merge(protected_routes)
 }

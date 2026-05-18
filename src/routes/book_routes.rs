@@ -8,8 +8,16 @@ use axum::{
 };
 
 use crate::{
-    types::{ApiResponse, Book, BookQuery, CreateBookDto, DbPool, Pagination, UpdateBookDto},
-    utils::{Claims, jwt_middleware},
+    auth::{
+        book_auth::book_auth, jwt_auth::{Claims, jwt_middleware}, 
+    }, 
+    utils::pagination_utils::Pagination,
+    models:: book_model::{
+        Book, BookQuery, CreateBook, UpdateBook
+    },
+    types::{
+        db_types::DbPool, response_types::ApiResponse
+    }
 };
 
 // books?page=1&per_page=10
@@ -58,7 +66,7 @@ async fn get_book_isbn10(
 
 async fn create_book(
     State(pool): State<DbPool>,
-    extract::Json(payload): extract::Json<CreateBookDto>,
+    extract::Json(payload): extract::Json<CreateBook>,
 ) -> impl IntoResponse {
     let conn = pool.get().await.unwrap();
 
@@ -67,7 +75,7 @@ async fn create_book(
         INSERT INTO books (
             title,
             description,
-            launched_at,
+            published_at,
             cover_type,
             author,
             edition,
@@ -77,7 +85,7 @@ async fn create_book(
             isbn_13_code,
             publisher,
             pages,
-            dimentions
+            dimensions
         )
         VALUES (
             $1, $2, $3, $4, $5, $6,
@@ -87,7 +95,7 @@ async fn create_book(
         &[
             &payload.title,
             &payload.description,
-            &payload.launched_at,
+            &payload.published_at,
             &payload.cover_type,
             &payload.author,
             &payload.edition,
@@ -97,7 +105,7 @@ async fn create_book(
             &payload.isbn_13_code,
             &payload.publisher,
             &payload.pages,
-            &payload.dimentions,
+            &payload.dimensions,
         ],
     )
     .await
@@ -109,32 +117,32 @@ async fn create_book(
 async fn update_book(
     Path(book_id): Path<i64>,
     State(pool): State<DbPool>,
-    Json(payload): Json<UpdateBookDto>,
-) -> impl IntoResponse {
-    let conn = pool.get().await.unwrap();
+    Json(payload): Json<UpdateBook>,
+) -> Result<ApiResponse, ApiResponse> {
+    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
         "
         UPDATE books
-        SET title = $1,
-            description = $2,
-            launched_at = $3,
-            cover_type = $4,
-            author = $5,
-            edition = $6,
-            language = $7,
-            genre = $8,
-            isbn_10_code = $9,
-            isbn_13_code = $10,
-            publisher = $11,
-            pages = $12,
-            dimentions = $13
+        SET title = COALESCE($1, title),
+            description = COALESCE($2, description),
+            published_at = COALESCE($3, published_at),
+            cover_type = COALESCE($4, cover_type),
+            author = COALESCE($5, author),
+            edition = COALESCE($6, edition),
+            language = COALESCE($7, language),
+            genre = COALESCE($8, genre),
+            isbn_10_code = COALESCE($9, isbn_10_code),
+            isbn_13_code = COALESCE($10, isbn_13_code),
+            publisher = COALESCE($11, publisher),
+            pages = COALESCE($12, pages),
+            dimensions = COALESCE($13, dimensions)
         WHERE id = $14
         ",
         &[
             &payload.title,
             &payload.description,
-            &payload.launched_at,
+            &payload.published_at,
             &payload.cover_type,
             &payload.author,
             &payload.edition,
@@ -144,32 +152,38 @@ async fn update_book(
             &payload.isbn_13_code,
             &payload.publisher,
             &payload.pages,
-            &payload.dimentions,
+            &payload.dimensions,
             &book_id,
         ],
     )
     .await
-    .unwrap();
+    .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    ApiResponse::ok_msg(format!("Livro {:?} modificado.", &payload.title))
+    Ok(ApiResponse::ok_msg(format!("Livro {:?} modificado.", &payload.title)))
 }
 
 async fn delete_book(
     Path(book_id): Path<i64>,
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
-) -> impl IntoResponse {
-    if claims.sub != book_id {
-        return ApiResponse::err(StatusCode::FORBIDDEN);
+) -> Result<ApiResponse, ApiResponse> {
+    let authorized = book_auth(&claims).await;
+
+    if !authorized {
+        return Err(ApiResponse::err(StatusCode::FORBIDDEN));
     }
 
-    let conn = pool.get().await.unwrap();
+    if claims.sub != book_id {
+        return Err(ApiResponse::err(StatusCode::FORBIDDEN));
+    }
+
+    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute("DELETE FROM books WHERE id = $1", &[&book_id])
         .await
-        .unwrap();
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    ApiResponse::ok_msg(format!("Livro {} deletado.", &book_id))
+    Ok(ApiResponse::ok_msg(format!("Livro {} deletado.", &book_id)))
 }
 
 pub fn make_book_routes() -> Router<DbPool> {
