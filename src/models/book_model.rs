@@ -6,7 +6,6 @@ use tokio_postgres::{Row};
 pub struct Book {
     pub id: i64,
     pub title: String,
-    pub isbn_10_code: i64,
     pub author: String,
     pub description: Option<String>,
     pub published_at: Option<String>,
@@ -14,6 +13,7 @@ pub struct Book {
     pub edition: Option<String>,
     pub language: Option<String>,
     pub genre: Option<String>,
+    pub isbn_10_code: Option<i64>,
     pub isbn_13_code: Option<String>,
     pub publisher: Option<String>,
     pub pages: Option<i64>,
@@ -25,7 +25,6 @@ pub struct Book {
 #[derive(Deserialize)]
 pub struct CreateBook {
     pub title: String,
-    pub isbn_10_code: String,
     pub author: String,
     pub description: Option<String>,
     pub published_at: Option<String>,
@@ -33,6 +32,7 @@ pub struct CreateBook {
     pub edition: Option<String>,
     pub language: Option<String>,
     pub genre: Option<String>,
+    pub isbn_10_code: Option<String>,
     pub isbn_13_code: Option<String>,
     pub publisher: Option<String>,
     pub pages: Option<i64>,
@@ -42,7 +42,6 @@ pub struct CreateBook {
 #[derive(Deserialize)]
 pub struct UpdateBook {
     pub title: Option<String>,
-    pub isbn_10_code: Option<String>,
     pub author: Option<String>,
     pub description: Option<String>,
     pub published_at: Option<String>,
@@ -50,6 +49,7 @@ pub struct UpdateBook {
     pub edition: Option<String>,
     pub language: Option<String>,
     pub genre: Option<String>,
+    pub isbn_10_code: Option<String>,
     pub isbn_13_code: Option<String>,
     pub publisher: Option<String>,
     pub pages: Option<i64>,
@@ -61,10 +61,10 @@ impl From<&Row> for Book {
         Self {
             id: row.get("id"),
             title: row.get("title"),
+            author: row.get("author"),
             description: row.get("description"),
             published_at: row.get("published_at"),
             cover_type: row.get("cover_type"),
-            author: row.get("author"),
             edition: row.get("edition"),
             language: row.get("language"),
             genre: row.get("genre"),

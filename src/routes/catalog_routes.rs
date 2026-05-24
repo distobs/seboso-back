@@ -67,8 +67,17 @@ async fn list_catalog_by_store(
 
 async fn create_book_in_catalog(
     State(pool): State<DbPool>,
+    Extension(claims): Extension<Claims>,
     extract::Json(payload): extract::Json<Catalog>,
 ) -> Result<ApiResponse, ApiResponse> {
+    let authorized = catalog_auth(&claims, payload.store_id, &pool)
+        .await
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+
+    if !authorized {
+        return Err(ApiResponse::err(StatusCode::FORBIDDEN));
+    }
+    
     let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
@@ -132,7 +141,11 @@ async fn delete_book_in_catalog(
     State(pool): State<DbPool>,
     Extension(claims): Extension<Claims>,
 ) -> Result<ApiResponse, ApiResponse> {
-    if claims.sub != params.store_id {
+    let authorized = catalog_auth(&claims, params.store_id, &pool)
+        .await
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+
+    if !authorized {
         return Err(ApiResponse::err(StatusCode::FORBIDDEN));
     }
 

@@ -5,10 +5,11 @@ pub mod book_routes;
 pub mod catalog_routes;
 pub mod sebo_routes;
 pub mod user_routes;
+pub mod userstore_routes;
 
 async fn index_route() -> Json<Value> {
     Json(json!({
-        "DICA": "parâmetros JSON marcados com '?' são opcionais",
+        "DICA": "parâmetros marcados com '?' são opcionais",
         "/users": {
             "GET /users?page=<>&per_page=<>": {
                 "Descrição": "Lista usuários, com paginação",
@@ -138,13 +139,13 @@ async fn index_route() -> Json<Value> {
                 }
             },
 
-            "GET /books/{isbn_10}": {
-                "Descrição": "Retorna informações de um livro com base no isbn_10 code",
+            "GET /books/{book_id}": {
+                "Descrição": "Retorna informações de um livro específico.",
             },
 
             "POST /books/": {
                 "Descrição": "Cria livro",
-                "Permissões": "Necessita de token de usuário logado",
+                "Permissões": "Usuário deve ser admin.",
                 "Retornos": {
                     "200": "Criação bem-sucedida",
                     "403": "Permissão negada",
@@ -152,13 +153,13 @@ async fn index_route() -> Json<Value> {
                 "Parâmetros (JSON)": [
                     "title",
                     "author",
-                    "isbn_10_code",
                     "description?",
                     "published_at?",
                     "cover_type?",
                     "edition?",
                     "language?",
                     "genre?",
+                    "isbn_10_code?",
                     "isbn_13_code?",
                     "publisher?",
                     "pages?",
@@ -257,7 +258,22 @@ async fn index_route() -> Json<Value> {
                     "book_id",
                 ]
             }
-        }
+        },
+
+        "/userstore": {
+            "GET /userstore": {
+               "Descrição": "Lista relações sebo-usuário.",
+               "Parâmetros (de URL)": {
+                    "store_id?": "ID da loja",
+                    "user_id?": "ID de usuário",
+                },
+                "Funcionamento": {
+                    "Caso 1: store_id e user_id são fornecidos": "Retorna todas as relações do usuário com o sebo.",
+                    "Caso 2: store_id, somente": "Retorna todas as relações de usuários com o sebo.",
+                    "Caso 3: user_id": "Retorna todas as relações com sebos do usuário."
+                }
+            }
+        },
     }))
 }
 
@@ -268,4 +284,5 @@ pub fn make_routes() -> Router<DbPool> {
         .merge(sebo_routes::make_sebo_routes())
         .merge(book_routes::make_book_routes())
         .merge(catalog_routes::make_catalog_routes())
+        .merge(userstore_routes::make_userstore_routes())
 }

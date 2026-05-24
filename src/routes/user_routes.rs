@@ -50,7 +50,7 @@ async fn list_users(
 async fn get_user_id(Path(user_id): Path<i64>, State(pool): State<DbPool>) -> Json<User> {
     let conn = pool.get().await.unwrap();
     let row = conn
-        .query_one("SELECT * FROM users WHERE id = $1", &[&(user_id as i64)])
+        .query_one("SELECT * FROM users WHERE id = $1", &[&(user_id)])
         .await
         .unwrap();
 

@@ -3,7 +3,6 @@ use axum::{
     extract::{self, Path, Query, State},
     http::StatusCode,
     middleware,
-    response::IntoResponse,
     routing::{get, put, post},
 };
 
@@ -66,18 +65,25 @@ async fn get_book_id(
 
 async fn create_book(
     State(pool): State<DbPool>,
+    Extension(claims): Extension<Claims>,
     extract::Json(payload): extract::Json<CreateBook>,
-) -> impl IntoResponse {
+) -> Result<ApiResponse, ApiResponse> {
+    let authorized = book_auth(&claims).await;
+
+    if !authorized {
+        return Err(ApiResponse::err(StatusCode::FORBIDDEN));
+    }
+
     let conn = pool.get().await.unwrap();
 
     conn.execute(
         "
         INSERT INTO books (
             title,
+            author,
             description,
             published_at,
             cover_type,
-            author,
             edition,
             language,
             genre,
@@ -94,10 +100,10 @@ async fn create_book(
         ",
         &[
             &payload.title,
+            &payload.author,
             &payload.description,
             &payload.published_at,
             &payload.cover_type,
-            &payload.author,
             &payload.edition,
             &payload.language,
             &payload.genre,
@@ -111,24 +117,31 @@ async fn create_book(
     .await
     .unwrap();
 
-    ApiResponse::ok_msg("Livro criado.")
+    Ok(ApiResponse::ok_msg("Livro criado."))
 }
 
 async fn update_book(
     Path(book_id): Path<i64>,
     State(pool): State<DbPool>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<UpdateBook>,
 ) -> Result<ApiResponse, ApiResponse> {
+    let authorized = book_auth(&claims).await;
+
+    if !authorized {
+        return Err(ApiResponse::err(StatusCode::FORBIDDEN));
+    }
+
     let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
         "
         UPDATE books
         SET title = COALESCE($1, title),
-            description = COALESCE($2, description),
-            published_at = COALESCE($3, published_at),
-            cover_type = COALESCE($4, cover_type),
-            author = COALESCE($5, author),
+            author = COALESCE($2, author),
+            description = COALESCE($3, description),
+            published_at = COALESCE($4, published_at),
+            cover_type = COALESCE($5, cover_type),
             edition = COALESCE($6, edition),
             language = COALESCE($7, language),
             genre = COALESCE($8, genre),
@@ -141,10 +154,10 @@ async fn update_book(
         ",
         &[
             &payload.title,
+            &payload.author,
             &payload.description,
             &payload.published_at,
             &payload.cover_type,
-            &payload.author,
             &payload.edition,
             &payload.language,
             &payload.genre,
