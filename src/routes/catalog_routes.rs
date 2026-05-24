@@ -72,11 +72,11 @@ async fn create_book_in_catalog(
     let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
-        "INSERT INTO catalog (store_id, isbn_10_code_book, price, quantity, description)
+        "INSERT INTO catalog (store_id, book_id, price, quantity, description)
          VALUES ($1, $2, $3, $4, $5)",
         &[
             &payload.store_id,
-            &payload.isbn_10_code_book,
+            &payload.book_id,
             &payload.price,
             &payload.quantity,
             &payload.description,
@@ -105,19 +105,17 @@ async fn update_book_in_catalog(
     conn.execute(
         "
         UPDATE catalog
-        SET isbn_10_code_book = COALESCE($1, isbn_10_code_book),
-            price = COALESCE($2, price),
-            quantity = COALESCE($3, quantity),
-            description = COALESCE($4, description)
-        WHERE store_id = $5 AND isbn_10_code_book = $6
+        SET price = COALESCE($1, price),
+            quantity = COALESCE($2, quantity),
+            description = COALESCE($3, description)
+        WHERE store_id = $4 AND book_id = $5
         ",
         &[
-            &payload.isbn_10_code_book,
             &payload.price,
             &payload.quantity,
             &payload.description,
             &params.store_id,
-            &params.isbn_10_code_book,
+            &params.book_id,
         ],
     )
     .await
@@ -141,15 +139,15 @@ async fn delete_book_in_catalog(
     let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
-        "DELETE FROM catalog WHERE store_id = $1 AND isbn_10_code_book = $2",
-        &[&params.store_id, &params.isbn_10_code_book],
+        "DELETE FROM catalog WHERE store_id = $1 AND book_id = $2",
+        &[&params.store_id, &params.book_id],
     )
     .await
     .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     Ok(ApiResponse::ok_msg(format!(
         "Produto {} deletado do catalogo {}.",
-        &params.isbn_10_code_book, &params.store_id
+        &params.book_id, &params.store_id
     )))
 }
 

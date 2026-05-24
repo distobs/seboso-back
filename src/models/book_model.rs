@@ -23,11 +23,6 @@ pub struct Book {
 }
 
 #[derive(Deserialize)]
-pub struct BookQuery {
-    pub isbn_10: i64,
-}
-
-#[derive(Deserialize)]
 pub struct CreateBook {
     pub title: String,
     pub isbn_10_code: String,

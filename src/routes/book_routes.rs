@@ -13,7 +13,7 @@ use crate::{
     }, 
     utils::pagination_utils::Pagination,
     models:: book_model::{
-        Book, BookQuery, CreateBook, UpdateBook
+        Book, CreateBook, UpdateBook
     },
     types::{
         db_types::DbPool, response_types::ApiResponse
@@ -45,16 +45,16 @@ async fn list_books(
     Json(books)
 }
 
-async fn get_book_isbn10(
+async fn get_book_id(
+    Path(book_id): Path<i64>,
     State(pool): State<DbPool>,
-    Query(params): Query<BookQuery>,
 ) -> Json<Book> {
     let conn = pool.get().await.unwrap();
 
     let row = conn
         .query_one(
-            "SELECT * FROM books WHERE isbn_10_code = $1",
-            &[&params.isbn_10],
+            "SELECT * FROM books WHERE id = $1",
+            &[&book_id],
         )
         .await
         .unwrap();
@@ -189,7 +189,7 @@ async fn delete_book(
 pub fn make_book_routes() -> Router<DbPool> {
     let public_routes = Router::new()
         .route("/books", get(list_books))
-        .route("/books/isbn", get(get_book_isbn10));
+        .route("/books/{book_id}", get(get_book_id));
     
     let protected_routes = Router::new()
         .route(

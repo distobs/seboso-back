@@ -15,15 +15,15 @@ CREATE TABLE IF NOT EXISTS "users" (
 CREATE TABLE IF NOT EXISTS "books" (
 	"id" bigserial NOT NULL UNIQUE,
 	"title" varchar(255) NOT NULL,
-	"isbn_10_code" varchar(255) NOT NULL,
 	"author" varchar(255) NOT NULL,
 	"description" varchar(255),
 	"published_at" varchar(255),
+	"isbn_10_code" varchar(255) UNIQUE,
+	"isbn_13_code" varchar(255) UNIQUE,
 	"cover_type" varchar(255),
-	"edition" varchar(255),
+	"edition" varchar(255)
 	"language" varchar(255),
 	"genre" varchar(255),
-	"isbn_13_code" varchar(255),
 	"publisher" varchar(255),
 	"pages" bigint,
 	"dimensions" varchar(255),
@@ -55,12 +55,12 @@ CREATE TABLE IF NOT EXISTS "user_store" (
 );
 
 CREATE TABLE IF NOT EXISTS "catalog" (
-	"store_id" bigint NOT NULL,
-	"isbn_10_code_book" bigint NOT NULL,
+	"store_id" bigserial NOT NULL,
+	"book_id" bigserial NOT NULL,
 	"price" real NOT NULL,
 	"quantity" bigint NOT NULL,
 	"description" varchar(255) NOT NULL,
-	PRIMARY KEY ("store_id", "isbn_10_code_book")
+	PRIMARY KEY ("store_id", "book_id")
 );
 
 CREATE
@@ -109,9 +109,4 @@ ADD
 ALTER TABLE
 	"catalog"
 ADD
-	CONSTRAINT "catalog_fk1" FOREIGN KEY ("isbn_10_code_book") REFERENCES "books"("isbn_10_code");
-
-ALTER TABLE
-	"books"
-ADD
-	CONSTRAINT books_isbn_10_unique UNIQUE ("isbn_10_code");
+	CONSTRAINT "catalog_fk1" FOREIGN KEY ("book_id") REFERENCES "books"("id");
