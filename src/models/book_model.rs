@@ -13,7 +13,7 @@ pub struct Book {
     pub edition: Option<String>,
     pub language: Option<String>,
     pub genre: Option<String>,
-    pub isbn_10_code: Option<i64>,
+    pub isbn_10_code: Option<String>,
     pub isbn_13_code: Option<String>,
     pub publisher: Option<String>,
     pub pages: Option<i64>,
