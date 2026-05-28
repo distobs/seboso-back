@@ -16,12 +16,12 @@ CREATE TABLE IF NOT EXISTS "books" (
 	"id" bigserial NOT NULL UNIQUE,
 	"title" varchar(255) NOT NULL,
 	"author" varchar(255) NOT NULL,
-	"description" varchar(255),
+	"description" text,
 	"published_at" varchar(255),
 	"isbn_10_code" varchar(255) UNIQUE,
 	"isbn_13_code" varchar(255) UNIQUE,
 	"cover_type" varchar(255),
-	"edition" varchar(255)
+	"edition" varchar(255),
 	"language" varchar(255),
 	"genre" varchar(255),
 	"publisher" varchar(255),
@@ -51,15 +51,15 @@ CREATE TABLE IF NOT EXISTS "user_store" (
 	"role" varchar(255) NOT NULL,
 	"user_id" bigint NOT NULL,
 	"store_id" bigint NOT NULL,
-	PRIMARY KEY ("user_id", "store_id")
+	PRIMARY KEY ("user_id", "store_id", "role")
 );
 
 CREATE TABLE IF NOT EXISTS "catalog" (
-	"store_id" bigserial NOT NULL,
-	"book_id" bigserial NOT NULL,
-	"price" real NOT NULL,
-	"quantity" bigint NOT NULL,
-	"description" varchar(255) NOT NULL,
+	"store_id" bigint NOT NULL,
+	"book_id" bigint NOT NULL,
+	"price" numeric(10, 2) NOT NULL CHECK ("price" >= 0),
+	"quantity" bigint NOT NULL CHECK ("quantity" >= 0),
+	"description" text NOT NULL,
 	PRIMARY KEY ("store_id", "book_id")
 );
 

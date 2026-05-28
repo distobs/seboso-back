@@ -86,7 +86,7 @@ async fn create_user(
     .await
     .unwrap();
 
-    ApiResponse::ok()
+    ApiResponse::ok_msg("Usuário criado com sucesso.")
 }
 
 /*

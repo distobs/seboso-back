@@ -9,17 +9,11 @@ pub struct UserStore {
     pub role: String,
 }
 
-#[derive(Deserialize)]
-pub struct CreateUserStore {
-    pub store_id: i64,
-    pub user_id: i64,
-    pub role: String,
-}
-
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct QueryUserStore {
+    pub store_id: Option<i64>,
     pub user_id: Option<i64>,
-    pub store_id: Option<String>,
+    pub role: Option<String>
 }
 
 impl From<&Row> for UserStore {

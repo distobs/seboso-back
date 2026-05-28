@@ -266,13 +266,49 @@ async fn index_route() -> Json<Value> {
                "Parâmetros (de URL)": {
                     "store_id?": "ID da loja",
                     "user_id?": "ID de usuário",
+                    "role?": "Role procurado"
                 },
-                "Funcionamento": {
-                    "Caso 1: store_id e user_id são fornecidos": "Retorna todas as relações do usuário com o sebo.",
-                    "Caso 2: store_id, somente": "Retorna todas as relações de usuários com o sebo.",
-                    "Caso 3: user_id": "Retorna todas as relações com sebos do usuário."
-                }
-            }
+                "Funcionamento": "Use teoria dos conjuntos."
+            },
+            "POST /userstore": {
+                "Descrição": "Cria relação sebo-usuário, ou seja, atribui uma role a um usuário em um sebo.",
+                "Permissões": "Necessita de token do dono da conta ou admin",
+                "Retornos": {
+                    "200": "Criação bem-sucedida",
+                    "403": "Permissão negada",
+                },
+                "Parâmetros (JSON)": [
+                    "user_id",
+                    "store_id",
+                    "role"
+                ]
+            },
+            "PUT /userstore": {
+                "Descrição": "Atualiza relação sebo-usuário, ou seja, a role de um usuário em um sebo.",
+                "Permissões": "Necessita de token do dono da conta ou admin",
+                "Retornos": {
+                    "200": "Atualização bem-sucedida",
+                    "403": "Permissão negada",
+                },
+                "Parâmetros (JSON)": [
+                    "user_id",
+                    "store_id",
+                    "role"
+                ]
+            },
+            "DELETE /userstore": {
+                "Descrição": "Remove relação sebo-usuário.",
+                "Permissões": "Necessita de token do dono da conta ou admin",
+                "Retornos": {
+                    "200": "Remoção bem-sucedida",
+                    "403": "Permissão negada",
+                },
+                "Parâmetros (JSON)": [
+                    "user_id",
+                    "store_id",
+                    "role"
+                ]
+            },
         },
     }))
 }
