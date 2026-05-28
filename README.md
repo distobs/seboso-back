@@ -55,13 +55,137 @@ erros com nosso back-end.
 
 ```json
 {
+  "/books": {
+    "DELETE /books/{book_id}": {
+      "Descrição": "Exclui livro",
+      "Permissões": "Usuário deve ser admin.",
+      "Retornos": {
+        "200": "Exclusão bem-sucedida",
+        "403": "Permissão negada"
+      }
+    },
+    "GET /books/{book_id}": {
+      "Descrição": "Retorna informações de um livro específico."
+    },
+    "GET /books?page=<>&per_page=<>": {
+      "Descrição": "Lista livros, com paginação",
+      "Parâmetros (de URL)": {
+        "page": "Página",
+        "per_page": "Número de livros por página"
+      }
+    },
+    "POST /books/": {
+      "Descrição": "Cria livro",
+      "Parâmetros (JSON)": [
+        "title",
+        "author",
+        "description?",
+        "published_at?",
+        "cover_type?",
+        "edition?",
+        "language?",
+        "genre?",
+        "isbn_10_code?",
+        "isbn_13_code?",
+        "publisher?",
+        "pages?",
+        "dimensions?"
+      ],
+      "Permissões": "Usuário deve ser admin.",
+      "Retornos": {
+        "200": "Criação bem-sucedida",
+        "403": "Permissão negada"
+      }
+    },
+    "PUT /books/{book_id}": {
+      "Descrição": "Atualiza um livro",
+      "Parâmetros (JSON)": [
+        "title?",
+        "description?",
+        "published_at?",
+        "cover_type?",
+        "author?",
+        "edition?",
+        "language?",
+        "genre?",
+        "isbn_10_code?",
+        "isbn_13_code?",
+        "publisher?",
+        "pages?",
+        "dimensions?"
+      ],
+      "Permissões": "Usuário deve ser admin.",
+      "Retornos": {
+        "200": "Atualização bem-sucedida",
+        "403": "Permissão negada"
+      }
+    }
+  },
+  "/catalog": {
+    "DELETE /catalog": {
+      "Descrição": "Remove um livro do catálogo",
+      "Parâmetros (JSON)": [
+        "store_id",
+        "book_id"
+      ],
+      "Permissões": "Necessita de token de 'worker' ou 'owner' do sebo, ou admin",
+      "Retornos": {
+        "200": "Remoção bem-sucedida",
+        "403": "Permissão negada"
+      }
+    },
+    "GET /catalog": {
+      "Descrição": "Lista todos os livros presentes no catálogo"
+    },
+    "GET /catalog/{store_id}": {
+      "Descrição": "Lista todos os livros do catálogo de um sebo específico",
+      "Parâmetros (de URL)": {
+        "store_id": "ID do sebo"
+      }
+    },
+    "POST /catalog": {
+      "Descrição": "Adiciona um livro ao catálogo de um sebo",
+      "Parâmetros (JSON)": [
+        "store_id",
+        "book_id",
+        "price",
+        "quantity",
+        "state"
+      ],
+      "Permissões": "Necessita de token de 'worker' ou 'owner' do sebo, ou admin",
+      "Retornos": {
+        "200": "Criação bem-sucedida",
+        "403": "Permissão negada"
+      }
+    },
+    "PUT /catalog": {
+      "Descrição": "Atualiza informações de um livro no catálogo",
+      "Parâmetros (JSON)": [
+        "store_id?",
+        "book_id?",
+        "price?",
+        "quantity?",
+        "state?"
+      ],
+      "Permissões": "Necessita de token de 'worker' ou 'owner' do sebo, ou admin",
+      "Retornos": {
+        "200": "Atualização bem-sucedida",
+        "403": "Permissão negada"
+      }
+    }
+  },
   "/stores": {
-    "DELETE /sebos/{sebo_id}": "Exclui sebo, necessita de token de um funcionário com role 'worker' ou 'owner'",
-
+    "DELETE /sebos/{sebo_id}": {
+      "Descrição": "Exclui sebo",
+      "Permissões": "Necessita de token de um funcionário com role 'worker' ou 'owner', ou admin",
+      "Retornos": {
+        "200": "Exclusão bem-sucedida",
+        "403": "Permissão negada"
+      }
+    },
     "GET /sebos/{sebos_id}": {
       "Descrição": "Retorna informações de um sebo com base no ID"
     },
-
     "GET /stores?page=<>&per_page=<>": {
       "Descrição": "Lista sebos, com paginação",
       "Parâmetros (de URL)": {
@@ -69,34 +193,8 @@ erros com nosso back-end.
         "per_page": "Número de sebos por página"
       }
     },
-
     "POST /sebos/": {
-      "Adicional: parâmetro workers": {
-        "Descrição": "O parâmetro 'workers' deve ser uma lista de objetos com o formato descrito abaixo",
-        "Formato": {
-          "role": "Cargo do funcionário dentro do sebo.",
-          "user_id": "ID do usuário a ser adicionado como funcionário do sebo"
-        }
-      },
-
       "Descrição": "Cria sebo",
-
-      "Parâmetros (JSON)": [
-        "name",
-        "cnpj",
-        "street",
-        "number",
-        "city",
-        "state",
-        "city_block",
-        "cep",
-        "workers"
-      ]
-    },
-
-    "PUT /sebos/{sebo_id}": {
-      "Função": "Atualiza um sebo, necessita de token de um funcionário com role 'worker' ou 'owner'",
-
       "Parâmetros (JSON)": [
         "name",
         "cnpj",
@@ -106,169 +204,141 @@ erros com nosso back-end.
         "state",
         "city_block",
         "cep"
-      ]
+      ],
+      "Permissões": "Necessita de token de usuário logado",
+      "Retornos": {
+        "200": "Criação bem-sucedida",
+        "403": "Permissão negada"
+      }
+    },
+    "PUT /sebos/{sebo_id}": {
+      "Função": "Atualiza um sebo",
+      "Parâmetros (JSON)": [
+        "name?",
+        "cnpj?",
+        "street?",
+        "number?",
+        "city?",
+        "state?",
+        "city_block?",
+        "cep?"
+      ],
+      "Permissões": "Funcionário com role 'worker' ou 'owner', ou admin",
+      "Retornos": {
+        "200": "Atualização bem-sucedida",
+        "403": "Permissão negada"
+      }
     }
   },
-
   "/users": {
     "DELETE /users/{user_id}": {
-      "Descrição": "Exclui usuário, necessita de token do dono da conta"
+      "Descrição": "Exclui usuário.",
+      "Permissões": "Usuário deve ser dono da conta ou admin.",
+      "Retornos": {
+        "200": "Exclusão bem-sucedida",
+        "403": "Permissão negada"
+      }
     },
-
     "GET /users/{user_id}": {
       "Descrição": "Retorna informações de usuário com base no ID"
     },
-
     "GET /users?page=<>&per_page=<>": {
       "Descrição": "Lista usuários, com paginação",
-
       "Parâmetros (de URL)": {
         "page": "Página",
         "per_page": "Número de usuários por página"
       }
     },
-
     "POST /users/": {
       "Descrição": "Cria usuário",
-
       "Parâmetros (JSON)": [
         "nome",
         "email",
         "login",
         "password",
-        "cell_number",
-        "is_activated"
+        "cell_number?"
       ]
     },
-
     "POST /users/login": {
       "Descrição": "Faz login e retorna token JWT",
-
       "Parâmetros (JSON)": [
         "login",
         "password"
-      ]
+      ],
+      "Retornos": {
+        "200": "Login bem-sucedido, retorna token JWT",
+        "403": "Credenciais inválidas",
+        "404": "Usuário não encontrado"
+      }
     },
-
     "PUT /users/{user_id}": {
-      "Descrição": "Atualiza um usuário, necessita de token do dono da conta",
-
+      "Descrição": "Atualiza um usuário",
       "Parâmetros (JSON)": [
-        "name",
-        "email",
-        "login",
+        "name?",
+        "email?",
+        "login?",
         "password",
-        "cell_number",
-        "is_activated"
-      ]
+        "cell_number?",
+        "is_activated?"
+      ],
+      "Permissões": "Usuário deve ser dono da conta ou admin.",
+      "Retornos": {
+        "200": "Atualização bem-sucedida",
+        "403": "Permissão negada"
+      }
     }
   },
-
-  "/books": {
-    "DELETE /books/{book_id}": {
-      "Descrição": "Exclui livro"
-    },
-
-    "GET /books/{isbn_10}": {
-      "Descrição": "Retorna informações de um livro com base no isbn_10 code"
-    },
-
-    "GET /books?page=<>&per_page=<>": {
-      "Descrição": "Lista livros, com paginação",
-
-      "Parâmetros (de URL)": {
-        "page": "Página",
-        "per_page": "Número de livros por página"
+  "/userstore": {
+    "DELETE /userstore": {
+      "Descrição": "Remove relação sebo-usuário.",
+      "Parâmetros (JSON)": [
+        "user_id",
+        "store_id",
+        "role"
+      ],
+      "Permissões": "Necessita de token do dono da conta ou admin",
+      "Retornos": {
+        "200": "Remoção bem-sucedida",
+        "403": "Permissão negada"
       }
     },
-
-    "POST /books/": {
-      "Descrição": "Cria livro",
-
-      "Parâmetros (JSON)": [
-        "title",
-        "description",
-        "published_at",
-        "cover_type",
-        "author",
-        "edition",
-        "language",
-        "genre",
-        "isbn_10_code",
-        "isbn_13_code",
-        "publisher",
-        "pages",
-        "dimensions"
-      ]
+    "GET /userstore": {
+      "Descrição": "Lista relações sebo-usuário.",
+      "Funcionamento": "Use teoria dos conjuntos.",
+      "Parâmetros (de URL)": {
+        "role?": "Role procurado",
+        "store_id?": "ID da loja",
+        "user_id?": "ID de usuário"
+      }
     },
-
-    "PUT /books/{book_id}": {
-      "Descrição": "Atualiza um livro",
-
+    "POST /userstore": {
+      "Descrição": "Cria relação sebo-usuário, ou seja, atribui uma role a um usuário em um sebo.",
       "Parâmetros (JSON)": [
-        "title",
-        "description",
-        "published_at",
-        "cover_type",
-        "author",
-        "edition",
-        "language",
-        "genre",
-        "isbn_10_code",
-        "isbn_13_code",
-        "publisher",
-        "pages",
-        "dimensions"
-      ]
+        "user_id",
+        "store_id",
+        "role"
+      ],
+      "Permissões": "Necessita de token do dono da conta ou admin",
+      "Retornos": {
+        "200": "Criação bem-sucedida",
+        "403": "Permissão negada"
+      }
+    },
+    "PUT /userstore": {
+      "Descrição": "Atualiza relação sebo-usuário, ou seja, a role de um usuário em um sebo.",
+      "Parâmetros (JSON)": [
+        "user_id",
+        "store_id",
+        "role"
+      ],
+      "Permissões": "Necessita de token do dono da conta ou admin",
+      "Retornos": {
+        "200": "Atualização bem-sucedida",
+        "403": "Permissão negada"
+      }
     }
   },
-
-  "/catalog": {
-    "GET /catalog": {
-      "Descrição": "Lista todos os livros presentes no catálogo"
-    },
-
-    "GET /catalog/{store_id}": {
-      "Descrição": "Lista todos os livros do catálogo de um sebo específico",
-
-      "Parâmetros (de URL)": {
-        "store_id": "ID do sebo"
-      }
-    },
-
-    "POST /catalog": {
-      "Descrição": "Adiciona um livro ao catálogo de um sebo, necessita autenticação JWT",
-
-      "Parâmetros (JSON)": [
-        "store_id",
-        "book_id",
-        "price",
-        "quantity",
-        "state"
-      ]
-    },
-
-    "PUT /catalog": {
-      "Descrição": "Atualiza informações de um livro no catálogo, necessita autenticação JWT",
-
-      "Parâmetros (JSON)": [
-        "store_id",
-        "book_id",
-        "price",
-        "quantity",
-        "state"
-      ]
-    },
-
-    "DELETE /catalog": {
-      "Descrição": "Remove um livro do catálogo, necessita autenticação JWT",
-
-      "Parâmetros (JSON)": [
-        "store_id",
-        "book_id"
-      ]
-    }
-  }
+  "DICA": "parâmetros marcados com '?' são opcionais"
 }
 ```
 
