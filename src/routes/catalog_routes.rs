@@ -79,6 +79,8 @@ async fn create_book_in_catalog(
     }
     
     let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+    
+    println!("até aqui de boa");
 
     conn.execute(
         "INSERT INTO catalog (store_id, book_id, price, quantity, description)
@@ -170,7 +172,7 @@ pub fn make_catalog_routes() -> Router<DbPool> {
         .route("/catalog/{store_id}", get(list_catalog_by_store));
 
     let protected_routes = Router::new().route(
-        "/catalog/",
+        "/catalog",
         post(create_book_in_catalog)
             .put(update_book_in_catalog)
             .delete(delete_book_in_catalog)

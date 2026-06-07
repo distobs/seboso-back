@@ -13,7 +13,7 @@ No Linux:
 - Clone o repositório:
 
 ```bash
-$ git clone https://github.com/distobs/seboso-back.git
+$ git clone https://github.com/distobs/storeso-back.git
 ```
 
 - Crie um .env:
@@ -175,7 +175,7 @@ erros com nosso back-end.
     }
   },
   "/stores": {
-    "DELETE /sebos/{sebo_id}": {
+    "DELETE /stores/{sebo_id}": {
       "Descrição": "Exclui sebo",
       "Permissões": "Necessita de token de um funcionário com role 'worker' ou 'owner', ou admin",
       "Retornos": {
@@ -183,7 +183,7 @@ erros com nosso back-end.
         "403": "Permissão negada"
       }
     },
-    "GET /sebos/{sebos_id}": {
+    "GET /stores/{sebos_id}": {
       "Descrição": "Retorna informações de um sebo com base no ID"
     },
     "GET /stores?page=<>&per_page=<>": {
@@ -193,7 +193,7 @@ erros com nosso back-end.
         "per_page": "Número de sebos por página"
       }
     },
-    "POST /sebos/": {
+    "POST /stores/": {
       "Descrição": "Cria sebo",
       "Parâmetros (JSON)": [
         "name",
@@ -211,7 +211,7 @@ erros com nosso back-end.
         "403": "Permissão negada"
       }
     },
-    "PUT /sebos/{sebo_id}": {
+    "PUT /stores/{sebo_id}": {
       "Função": "Atualiza um sebo",
       "Parâmetros (JSON)": [
         "name?",

@@ -3,7 +3,7 @@ use axum::{Json, Router, routing::get};
 use serde_json::{Value, json};
 pub mod book_routes;
 pub mod catalog_routes;
-pub mod sebo_routes;
+pub mod store_routes;
 pub mod user_routes;
 pub mod userstore_routes;
 
@@ -317,7 +317,7 @@ pub fn make_routes() -> Router<DbPool> {
     Router::new()
         .route("/", get(index_route))
         .merge(user_routes::make_user_routes())
-        .merge(sebo_routes::make_sebo_routes())
+        .merge(store_routes::make_store_routes())
         .merge(book_routes::make_book_routes())
         .merge(catalog_routes::make_catalog_routes())
         .merge(userstore_routes::make_userstore_routes())

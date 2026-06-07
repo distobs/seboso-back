@@ -184,22 +184,20 @@ async fn delete_store(
 
 /*============================================================================*/
 
-pub fn make_sebo_routes() -> Router<DbPool> {
+pub fn make_store_routes() -> Router<DbPool> {
     let public_routes = Router::new()
         .route("/stores", get(list_stores))
         .route("/stores/{store_id}", get(get_store_id));
 
     let protected_routes = Router::new().route(
         "/stores",
-        post(create_store).
-        layer(middleware::from_fn(jwt_middleware))
+        post(create_store)
     )
     .route(
         "/stores/{store_id}",
             delete(delete_store)
             .put(update_store)
-            .layer(middleware::from_fn(jwt_middleware)),
-    );
+    ).layer(middleware::from_fn(jwt_middleware));
 
     public_routes.merge(protected_routes)
 }
