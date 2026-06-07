@@ -39,11 +39,15 @@ No Windows: deve ser parecido, mas não tenho um Windows instalado pra testar.
 
 ## Como testar
 
-No Linux:
+No projeto, existe um script escrito em Python que cria um usuário administrador e faz um workflow genérico de CRUD usando as rotas da API.
+
+O script está disponível no diretório `/scripts`. Certifique-se de que o back-end está de pé e, no Linux:
 
 ```bash
-$ chmod +x populate-db.bash
-$ ./populate-db.bash
+$ cd /scripts
+$ python -m venv .venv
+$ pip install psycopg2 requests python-dotenv
+$ python populate_and_test.py
 ```
 
 No Windows: WSL, Cygwin e adjacentes devem resolver. Fazer os requests manualmente também.
