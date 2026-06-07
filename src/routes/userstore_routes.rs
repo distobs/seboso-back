@@ -12,7 +12,6 @@ async fn create_userstore(
         let validate = userstore_auth(
                 &pool,
                 claims,
-                payload.user_id,
                 payload.store_id,
                 &["owner"],
         ).await.map_err(
@@ -28,7 +27,7 @@ async fn create_userstore(
         )?;
         
         conn.query(
-                "INSERT INTO userstore (user_id, store_id, role) VALUES ($1, $2, $3)",
+                "INSERT INTO user_store (user_id, store_id, role) VALUES ($1, $2, $3)",
                 &[&payload.user_id, &payload.store_id, &payload.role]
         ).await.map_err(
                 |_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR
@@ -45,7 +44,6 @@ async fn update_userstore(
         let validate = userstore_auth(
                 &pool,
                 claims,
-                payload.user_id,
                 payload.store_id,
                 &["owner"],
         ).await.map_err(
@@ -61,7 +59,7 @@ async fn update_userstore(
         )?;
 
         conn.query(
-                "UPDATE userstore SET role = $1 WHERE user_id = $2 AND store_id = $3",
+                "UPDATE user_store SET role = $1 WHERE user_id = $2 AND store_id = $3",
                 &[&payload.role, &payload.user_id, &payload.store_id]
         ).await.map_err(
                 |_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -78,7 +76,6 @@ async fn delete_userstore(
         let validate = userstore_auth(
                 &pool,
                 claims,
-                payload.user_id,
                 payload.store_id,
                 &["owner"],
         ).await.map_err(
@@ -94,7 +91,7 @@ async fn delete_userstore(
         )?;
 
         conn.query(
-                "DELETE FROM userstore WHERE user_id = $1 AND store_id = $2 AND role = $3",
+                "DELETE FROM user_store WHERE user_id = $1 AND store_id = $2 AND role = $3",
                 &[&payload.user_id, &payload.store_id, &payload.role]
         ).await.map_err(
                 |_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -173,5 +170,4 @@ pub fn make_userstore_routes() -> Router<DbPool> {
             .layer(middleware::from_fn(jwt_middleware));
 
     public_routes.merge(protected_routes)
-
 }

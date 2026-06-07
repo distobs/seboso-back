@@ -20,7 +20,7 @@ def req(method, rt, desc, jdata=None, jwt = None):
             fun = requests.delete
 
     if jwt:
-        r = fun(endpoint, json=jdata, headers={'Authorization': f"Bearer {jwt}"})
+        r = fun(endpoint, json=jdata, headers={"Authorization": f"Bearer {jwt}"})
     else:
         r = fun(endpoint, json=jdata)
 
@@ -119,15 +119,15 @@ j = req("post", "/users/login", "Login as john2", {
 
 jwt = j["message"]
 
-req("put", "/users/2", "Update John 2's name to Joseph 2", jdata={
+req("put", "/users/3", "Update John 2's name to Joseph 2", jdata={
     "name": "Joseph 2",
 }, jwt=jwt)
 
-req("get", "/users/2", "Confirm changes in Joseph 2.")
+req("get", "/users/3", "Confirm changes in Joseph 2.")
 
 # DELETE USER
 
-req("delete", "/users/2", "Delete Joseph 2", jwt=jwt)
+req("delete", "/users/3", "Delete Joseph 2", jwt=jwt)
 
 req("get", "/users", "Confirm deletion")
 
@@ -282,3 +282,45 @@ catalogs = [
 # John 1 owns everything anyway.
 for catalog in catalogs:
     req("post", "/catalog", f"Adicionando livro {catalog['book_id']} ao catálogo da loja {catalog['store_id']}", jdata=catalog, jwt=jwt)
+
+# Create a new guy
+
+req("post", "/users", "Create user John 3", {
+    "name": "John 3",
+    "email": "john3@john.com",
+    "login": "john3",
+    "password": "1234",
+    "cell_number": "123412343",
+})
+
+j = req("post", "/users/login", "Login as John 3", {
+    "login": "john3",
+    "password": "1234"
+})
+
+jwt2 = j["message"]
+
+# Make the new guy a worker
+
+req("post", "/userstore", "Make John 3 a worker in sebo Seboso 1", jdata={
+    "store_id": 1,
+    "user_id": 4,
+    "role": "worker"
+}, jwt=jwt)
+
+# Do worker stuff
+
+req("put", "/catalog?store_id=1&book_id=1", "Update book 1 in catalog of Seboso 1 as John 3", jdata={
+        "price": 100.50,
+        "quantity": 1234,
+}, jwt=jwt2)
+
+req("delete", "/catalog?store_id=1&book_id=2", "Delete book 2 from catalog of Seboso 1 as John 3", jwt=jwt2)
+
+# Fire John 3
+
+req("delete", "/userstore", "Fire John 3", jdata={
+        "user_id": 4,
+        "store_id": 1,
+        "role": "worker",
+}, jwt=jwt)

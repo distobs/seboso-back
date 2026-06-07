@@ -78,10 +78,9 @@ async fn create_book_in_catalog(
         return Err(ApiResponse::err(StatusCode::FORBIDDEN));
     }
     
-    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+    let conn = pool.get().await
+    .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
     
-    println!("até aqui de boa");
-
     conn.execute(
         "INSERT INTO catalog (store_id, book_id, price, quantity, description)
          VALUES ($1, $2, $3, $4, $5)",
@@ -93,8 +92,7 @@ async fn create_book_in_catalog(
             &payload.description,
         ],
     )
-    .await
-    .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+    .await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     Ok(ApiResponse::ok_msg("Produto criado."))
 }
@@ -110,7 +108,7 @@ async fn update_book_in_catalog(
     if !authorized {
         return Err(ApiResponse::err(StatusCode::FORBIDDEN));
     }
-    
+
     let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
@@ -134,7 +132,7 @@ async fn update_book_in_catalog(
 
     Ok(ApiResponse::ok_msg(format!(
         "Produto {} modificado.",
-        &payload.isbn_10_code_book
+        &params.book_id
     )))
 }
 

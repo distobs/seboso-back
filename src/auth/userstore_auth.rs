@@ -7,7 +7,6 @@ use crate::{
 pub async fn userstore_auth(
         pool: &DbPool,
         claims: Claims,
-        user_id: i64,
         store_id: i64,
         required_role: &[&str],
 ) -> Result<bool, ApiResponse> {
@@ -15,11 +14,11 @@ pub async fn userstore_auth(
                 return Ok(true);        
         }
 
-        let rows = UserStore::from_user_store_id(pool, user_id, store_id)
+        let row = UserStore::from_user_store_id(pool, claims.sub, store_id)
         .await
         .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-        if let Some(row) = rows {
+        if let Some(row) = row {
                 if required_role.contains(&row.role.as_str()) {
                         return Ok(true);
                 }

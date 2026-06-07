@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS "user_store" (
 CREATE TABLE IF NOT EXISTS "catalog" (
 	"store_id" bigint NOT NULL,
 	"book_id" bigint NOT NULL,
-	"price" numeric(10, 2) NOT NULL CHECK ("price" >= 0),
+	"price" double precision NOT NULL CHECK ("price" >= 0),
 	"quantity" bigint NOT NULL CHECK ("quantity" >= 0),
 	"description" text NOT NULL,
 	PRIMARY KEY ("store_id", "book_id")

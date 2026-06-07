@@ -24,7 +24,7 @@ pub async fn store_auth(
         claims.sub,
         store_id
     ).await?;
-
+    
     match relation {
         Some(relation) =>
             Ok(relation.role == "worker" || relation.role == "owner"),

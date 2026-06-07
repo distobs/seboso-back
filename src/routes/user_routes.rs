@@ -193,8 +193,10 @@ pub fn make_user_routes() -> Router<DbPool> {
         .route("/users/{user_id}", get(get_user_id));
 
     let protected_routes = Router::new()
-        .route("/users/{user_id}", put(update_user).delete(delete_user))
-        .layer(middleware::from_fn(jwt_middleware));
+        .route("/users/{user_id}",
+            put(update_user).delete(delete_user)
+            .layer(middleware::from_fn(jwt_middleware))
+        );
 
     public_routes.merge(protected_routes)
 }

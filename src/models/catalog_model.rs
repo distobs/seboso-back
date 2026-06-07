@@ -5,15 +5,14 @@ use tokio_postgres::{Row};
 pub struct Catalog {
     pub store_id: i64,
     pub book_id: i64,
-    pub price: f32,
+    pub price: f64,
     pub quantity: i64,
     pub description: String,
 }
 
 #[derive(Deserialize)]
 pub struct UpdateCatalog {
-    pub isbn_10_code_book: i64,
-    pub price: Option<f32>,
+    pub price: Option<f64>,
     pub quantity: Option<i64>,
     pub description: Option<String>,
 }
