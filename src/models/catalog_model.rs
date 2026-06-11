@@ -30,7 +30,7 @@ impl From<&Row> for Catalog {
             book_id: row.get("book_id"),
             price: row.get("price"),
             quantity: row.get("quantity"),
-            description: row.get("store_id"),
+            description: row.get("description"),
         }
     }
 }

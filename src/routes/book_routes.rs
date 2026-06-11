@@ -3,20 +3,17 @@ use axum::{
     extract::{self, Path, Query, State},
     http::StatusCode,
     middleware,
-    routing::{get, put, post},
+    routing::{get, post, put},
 };
 
 use crate::{
     auth::{
-        book_auth::book_auth, jwt_auth::{Claims, jwt_middleware}, 
-    }, 
-    utils::pagination_utils::Pagination,
-    models:: book_model::{
-        Book, CreateBook, UpdateBook
+        book_auth::book_auth,
+        jwt_auth::{Claims, jwt_middleware},
     },
-    types::{
-        db_types::DbPool, response_types::ApiResponse
-    }
+    models::book_model::{Book, CreateBook, UpdateBook},
+    types::{db_types::DbPool, response_types::ApiResponse},
+    utils::pagination_utils::Pagination,
 };
 
 // books?page=1&per_page=10
@@ -44,17 +41,11 @@ async fn list_books(
     Json(books)
 }
 
-async fn get_book_id(
-    Path(book_id): Path<i64>,
-    State(pool): State<DbPool>,
-) -> Json<Book> {
+async fn get_book_id(Path(book_id): Path<i64>, State(pool): State<DbPool>) -> Json<Book> {
     let conn = pool.get().await.unwrap();
 
     let row = conn
-        .query_one(
-            "SELECT * FROM books WHERE id = $1",
-            &[&book_id],
-        )
+        .query_one("SELECT * FROM books WHERE id = $1", &[&book_id])
         .await
         .unwrap();
 
@@ -132,7 +123,10 @@ async fn update_book(
         return Err(ApiResponse::err(StatusCode::FORBIDDEN));
     }
 
-    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+    let conn = pool
+        .get()
+        .await
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute(
         "
@@ -172,7 +166,10 @@ async fn update_book(
     .await
     .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    Ok(ApiResponse::ok_msg(format!("Livro {:?} modificado.", &payload.title)))
+    Ok(ApiResponse::ok_msg(format!(
+        "Livro {:?} modificado.",
+        &payload.title
+    )))
 }
 
 async fn delete_book(
@@ -186,11 +183,10 @@ async fn delete_book(
         return Err(ApiResponse::err(StatusCode::FORBIDDEN));
     }
 
-    if claims.sub != book_id {
-        return Err(ApiResponse::err(StatusCode::FORBIDDEN));
-    }
-
-    let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
+    let conn = pool
+        .get()
+        .await
+        .map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     conn.execute("DELETE FROM books WHERE id = $1", &[&book_id])
         .await
@@ -203,18 +199,17 @@ pub fn make_book_routes() -> Router<DbPool> {
     let public_routes = Router::new()
         .route("/books", get(list_books))
         .route("/books/{book_id}", get(get_book_id));
-    
+
     let protected_routes = Router::new()
         .route(
             "/books",
-                post(create_book)
-                .layer(middleware::from_fn(jwt_middleware))
+            post(create_book).layer(middleware::from_fn(jwt_middleware)),
         )
         .route(
             "/books/{book_id}",
-                put(update_book)
+            put(update_book)
                 .delete(delete_book)
-                .layer(middleware::from_fn(jwt_middleware))
+                .layer(middleware::from_fn(jwt_middleware)),
         );
 
     public_routes.merge(protected_routes)
