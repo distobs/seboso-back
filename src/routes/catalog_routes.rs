@@ -47,7 +47,7 @@ async fn list_catalog(
 }
 
 async fn list_catalog_by_store(
-    Path(store_id): Path<usize>,
+    Path(store_id): Path<i64>,
     State(pool): State<DbPool>,
 ) -> Result<Json<Vec<Catalog>>, ApiResponse> {
     let conn = pool.get().await.map_err(|_| ApiResponse::err(StatusCode::INTERNAL_SERVER_ERROR))?;
