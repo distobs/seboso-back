@@ -74,6 +74,7 @@ async fn create_book(
             author,
             description,
             published_at,
+            cover_url,
             cover_type,
             edition,
             language,
@@ -86,7 +87,7 @@ async fn create_book(
         )
         VALUES (
             $1, $2, $3, $4, $5, $6,
-            $7, $8, $9, $10, $11, $12, $13
+            $7, $8, $9, $10, $11, $12, $13, $14
         )
         ",
         &[
@@ -94,6 +95,7 @@ async fn create_book(
             &payload.author,
             &payload.description,
             &payload.published_at,
+            &payload.cover_url,
             &payload.cover_type,
             &payload.edition,
             &payload.language,
@@ -135,22 +137,24 @@ async fn update_book(
             author = COALESCE($2, author),
             description = COALESCE($3, description),
             published_at = COALESCE($4, published_at),
-            cover_type = COALESCE($5, cover_type),
-            edition = COALESCE($6, edition),
-            language = COALESCE($7, language),
-            genre = COALESCE($8, genre),
-            isbn_10_code = COALESCE($9, isbn_10_code),
-            isbn_13_code = COALESCE($10, isbn_13_code),
-            publisher = COALESCE($11, publisher),
-            pages = COALESCE($12, pages),
-            dimensions = COALESCE($13, dimensions)
-        WHERE id = $14
+            cover_url = COALESCE($5, cover_type),
+            cover_type = COALESCE($6, cover_type),
+            edition = COALESCE($7, edition),
+            language = COALESCE($8, language),
+            genre = COALESCE($9, genre),
+            isbn_10_code = COALESCE($10, isbn_10_code),
+            isbn_13_code = COALESCE($11, isbn_13_code),
+            publisher = COALESCE($12, publisher),
+            pages = COALESCE($13, pages),
+            dimensions = COALESCE($14, dimensions)
+        WHERE id = $15
         ",
         &[
             &payload.title,
             &payload.author,
             &payload.description,
             &payload.published_at,
+            &payload.cover_url,
             &payload.cover_type,
             &payload.edition,
             &payload.language,

@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS "books" (
 	"published_at" varchar(255),
 	"isbn_10_code" varchar(255) UNIQUE,
 	"isbn_13_code" varchar(255) UNIQUE,
+	"cover_url" text,
 	"cover_type" varchar(255),
 	"edition" varchar(255),
 	"language" varchar(255),
