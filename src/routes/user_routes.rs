@@ -105,6 +105,16 @@ async fn update_user(
 
     let conn = pool.get().await.unwrap();
 
+    let hashed_password = match &payload.password {
+        Some(pw) if !pw.is_empty() => {
+            match hash(pw, DEFAULT_COST) {
+                Ok(h) => Some(h),
+                Err(_) => return ApiResponse::err_msg("Erro ao processar senha", StatusCode::INTERNAL_SERVER_ERROR),
+            }
+        },
+        _ => None,
+    };
+
     conn.execute(
         "UPDATE users
          SET name = COALESCE($1, name),
@@ -118,7 +128,7 @@ async fn update_user(
             &payload.name,
             &payload.email,
             &payload.login,
-            &payload.password,
+            &hashed_password,
             &payload.cell_number,
             &payload.is_activated,
             &user_id,
