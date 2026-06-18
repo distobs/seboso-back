@@ -41,6 +41,25 @@ async fn list_books(
     Json(books)
 }
 
+async fn get_book_isbn10(
+    Path(book_isbn10): Path<String>,
+    State(pool): State<DbPool>,
+) -> Json<Book> {
+    let conn = pool.get().await.unwrap();
+
+    let row = conn
+        .query_one(
+            "SELECT * FROM books WHERE isbn_10_code = $1",
+            &[&book_isbn10],
+        )
+        .await
+        .unwrap();
+
+    let book = Book::from(&row);
+
+    Json(book)
+}
+
 async fn get_book_id(Path(book_id): Path<i64>, State(pool): State<DbPool>) -> Json<Book> {
     let conn = pool.get().await.unwrap();
 
@@ -202,7 +221,8 @@ async fn delete_book(
 pub fn make_book_routes() -> Router<DbPool> {
     let public_routes = Router::new()
         .route("/books", get(list_books))
-        .route("/books/{book_id}", get(get_book_id));
+        .route("/books/{book_id}", get(get_book_id))
+        .route("/books/isbn/{book_isbn10}", get(get_book_isbn10));
 
     let protected_routes = Router::new()
         .route(
